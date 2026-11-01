@@ -1,9 +1,72 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
+const PAYPAL_URL = "https://paypal.me/fernando2814/10USD";
+
 export default function UploadPage() {
+  const router = useRouter();
+  const [ready, setReady] = useState(false);
+  const [user, setUser] = useState<{ name?: string; email?: string } | null>(null);
+  const [step, setStep] = useState(0);
+
+  const [title, setTitle] = useState("");
+  const [artist, setArtist] = useState("");
+  const [genre, setGenre] = useState("");
+  const [releaseDate, setReleaseDate] = useState("");
+  const [fileName, setFileName] = useState("");
+  const [coverName, setCoverName] = useState("");
+  const [paid, setPaid] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("unico_session");
+      if (!raw) {
+        router.replace("/login");
+        return;
+      }
+      const session = JSON.parse(raw);
+      setUser(session);
+      setArtist(session.name || "");
+      setReady(true);
+    } catch {
+      router.replace("/login");
+    }
+  }, [router]);
+
+  function goPay() {
+    const release = {
+      title,
+      artist,
+      genre,
+      releaseDate,
+      fileName,
+      coverName,
+      fee: "10.00",
+      status: "esperando_paypal",
+      user: user?.email,
+      at: new Date().toISOString(),
+    };
+    const key = "unico_releases";
+    const prev = JSON.parse(localStorage.getItem(key) || "[]");
+    localStorage.setItem(key, JSON.stringify([release, ...prev]));
+    setPaid(true);
+    window.open(PAYPAL_URL, "_blank", "noopener,noreferrer");
+  }
+
+  if (!ready) {
+    return (
+      <main className="min-h-screen bg-black text-white flex items-center justify-center">
+        <p className="text-gray-500">Verificando sesión…</p>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-black text-white px-6 py-12">
       <div className="max-w-3xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-12">
+        <div className="flex items-center justify-between mb-10">
           <div className="flex items-center gap-3">
             <div className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-b from-[#d4af37] to-[#8a6d2b]">
               U
@@ -13,146 +76,183 @@ export default function UploadPage() {
               <p className="text-[9px] tracking-[0.3em] text-[#d4af37]">DISTRO</p>
             </div>
           </div>
-          <a href="/" className="text-sm text-gray-500 hover:text-white transition">
+          <a href="/" className="text-sm text-gray-500 hover:text-white">
             ← Inicio
           </a>
         </div>
 
+        <p className="text-xs tracking-[0.3em] text-[#d4af37] mb-2">PASO {step + 1} DE 3</p>
         <h2 className="text-3xl md:text-4xl font-bold mb-2">Subir Música</h2>
-        <p className="text-gray-400 mb-10">
-          Completa la información de tu lanzamiento. Te llevaremos a todas las plataformas.
+        <p className="text-gray-400 mb-8 text-sm">
+          Sesión: {user?.email}. Al final pagas $10 USD con PayPal.
         </p>
 
-        <form className="space-y-8">
-          {/* Zona de drag & drop */}
-          <div className="border-2 border-dashed border-zinc-700 rounded-2xl p-12 text-center hover:border-[#d4af37]/50 transition cursor-pointer group">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-zinc-900 flex items-center justify-center group-hover:bg-[#d4af37]/10 transition">
-              <svg
-                className="w-8 h-8 text-gray-500 group-hover:text-[#d4af37] transition"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+        {step === 0 && (
+          <form
+            className="space-y-6"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!fileName || !title || !artist) return;
+              setStep(1);
+            }}
+          >
+            <label className="block border-2 border-dashed border-zinc-700 rounded-2xl p-10 text-center cursor-pointer hover:border-[#d4af37]/50">
+              <p className="font-medium mb-1">Audio del tema *</p>
+              <p className="text-sm text-gray-500 mb-3">WAV, FLAC o MP3</p>
+              <span className="text-[#d4af37] text-sm">{fileName || "Seleccionar archivo"}</span>
+              <input
+                type="file"
+                accept="audio/*"
+                required
+                className="hidden"
+                onChange={(e) => setFileName(e.target.files?.[0]?.name || "")}
+              />
+            </label>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Título *</label>
+                <input
+                  required
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 focus:outline-none focus:border-[#d4af37]"
                 />
-              </svg>
-            </div>
-            <p className="text-lg font-medium mb-1">Arrastra tu audio aquí</p>
-            <p className="text-sm text-gray-500 mb-4">
-              o haz clic para seleccionar (WAV, FLAC, MP3 • máx. 200 MB)
-            </p>
-            <button
-              type="button"
-              className="text-sm text-[#d4af37] border border-[#d4af37]/40 px-5 py-2 rounded-full hover:bg-[#d4af37]/10 transition"
-            >
-              Seleccionar archivo
-            </button>
-          </div>
-
-          {/* Información del track */}
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">Título de la canción *</label>
-              <input
-                type="text"
-                placeholder="Ej: Mi Mejor Canción"
-                className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 focus:outline-none focus:border-[#d4af37] transition"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">Artista principal *</label>
-              <input
-                type="text"
-                placeholder="Tu nombre artístico"
-                className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 focus:outline-none focus:border-[#d4af37] transition"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">Género *</label>
-              <select className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 focus:outline-none focus:border-[#d4af37] transition appearance-none">
-                <option value="">Selecciona un género</option>
-                <option>Reggaetón</option>
-                <option>Dembow</option>
-                <option>Bachata</option>
-                <option>Merengue</option>
-                <option>Trap Latino</option>
-                <option>Pop</option>
-                <option>Hip-Hop</option>
-                <option>Electrónica</option>
-                <option>Otro</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">Fecha de lanzamiento</label>
-              <input
-                type="date"
-                className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 focus:outline-none focus:border-[#d4af37] transition"
-              />
-            </div>
-          </div>
-
-          {/* Cover art */}
-          <div>
-            <label className="block text-sm text-gray-400 mb-2">Portada (Cover Art) *</label>
-            <div className="flex items-center gap-6">
-              <div className="w-32 h-32 rounded-xl bg-zinc-900 border border-zinc-700 flex items-center justify-center shrink-0">
-                <svg className="w-10 h-10 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
               </div>
               <div>
-                <p className="text-sm text-gray-400 mb-3">
-                  JPG o PNG • mínimo 3000×3000 px • proporción 1:1
-                </p>
-                <button
-                  type="button"
-                  className="text-sm border border-zinc-600 px-4 py-2 rounded-full hover:border-[#d4af37] hover:text-[#d4af37] transition"
-                >
-                  Subir portada
-                </button>
+                <label className="block text-sm text-gray-400 mb-2">Artista *</label>
+                <input
+                  required
+                  value={artist}
+                  onChange={(e) => setArtist(e.target.value)}
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 focus:outline-none focus:border-[#d4af37]"
+                />
               </div>
             </div>
-          </div>
-
-          {/* Idioma / Explicit */}
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">Idioma de la letra</label>
-              <select className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 focus:outline-none focus:border-[#d4af37] transition appearance-none">
-                <option>Español</option>
-                <option>Inglés</option>
-                <option>Instrumental</option>
-                <option>Otro</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-3 pt-8">
-              <input type="checkbox" id="explicit" className="accent-[#d4af37] w-5 h-5" />
-              <label htmlFor="explicit" className="text-sm text-gray-300 cursor-pointer">
-                Contenido explícito (letras fuertes)
-              </label>
-            </div>
-          </div>
-
-          {/* Botones finales */}
-          <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-zinc-800">
-            <button
-              type="button"
-              className="flex-1 border border-zinc-600 py-3.5 rounded-full font-medium hover:bg-zinc-900 transition"
-            >
-              Guardar como borrador
-            </button>
             <button
               type="submit"
-              className="flex-1 bg-[#d4af37] text-black font-bold py-3.5 rounded-full hover:bg-[#e5c04a] transition"
+              className="w-full md:w-auto bg-[#d4af37] text-black font-bold py-3.5 px-8 rounded-full"
             >
-              Continuar →
+              Continuar
             </button>
+          </form>
+        )}
+
+        {step === 1 && (
+          <form
+            className="space-y-6"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!genre || !coverName) return;
+              setStep(2);
+            }}
+          >
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Género *</label>
+                <select
+                  required
+                  value={genre}
+                  onChange={(e) => setGenre(e.target.value)}
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 focus:outline-none focus:border-[#d4af37]"
+                >
+                  <option value="">Selecciona</option>
+                  <option>Reggaetón</option>
+                  <option>Dembow</option>
+                  <option>Bachata</option>
+                  <option>Merengue</option>
+                  <option>Trap Latino</option>
+                  <option>Pop</option>
+                  <option>Hip-Hop</option>
+                  <option>Otro</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Fecha de lanzamiento</label>
+                <input
+                  type="date"
+                  value={releaseDate}
+                  onChange={(e) => setReleaseDate(e.target.value)}
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 focus:outline-none focus:border-[#d4af37]"
+                />
+              </div>
+            </div>
+            <label className="flex items-center justify-between border border-zinc-700 rounded-2xl p-4 cursor-pointer">
+              <span>
+                <span className="block text-sm">Portada *</span>
+                <span className="text-xs text-gray-500">JPG/PNG · 3000×3000</span>
+              </span>
+              <span className="text-[#d4af37] text-sm">{coverName || "Subir"}</span>
+              <input
+                type="file"
+                accept="image/*"
+                required
+                className="hidden"
+                onChange={(e) => setCoverName(e.target.files?.[0]?.name || "")}
+              />
+            </label>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setStep(0)}
+                className="flex-1 border border-zinc-600 py-3.5 rounded-full"
+              >
+                Atrás
+              </button>
+              <button
+                type="submit"
+                className="flex-1 bg-[#d4af37] text-black font-bold py-3.5 rounded-full"
+              >
+                Ir al pago
+              </button>
+            </div>
+          </form>
+        )}
+
+        {step === 2 && (
+          <div className="border border-zinc-800 rounded-2xl p-6 bg-zinc-950 space-y-4">
+            <h3 className="text-2xl font-bold">Pagar $10 USD con PayPal</h3>
+            <div className="text-sm space-y-2 text-gray-300">
+              <p className="flex justify-between border-b border-zinc-800 py-2">
+                <span className="text-gray-500">Canción</span>
+                <span>{title}</span>
+              </p>
+              <p className="flex justify-between border-b border-zinc-800 py-2">
+                <span className="text-gray-500">Artista</span>
+                <span>{artist}</span>
+              </p>
+              <p className="flex justify-between border-b border-zinc-800 py-2">
+                <span className="text-gray-500">Tarifa</span>
+                <span className="text-[#d4af37] font-bold">$10.00 USD</span>
+              </p>
+            </div>
+            <p className="text-sm text-gray-400">
+              Las regalías son 100% del artista. Este pago es solo el servicio de distribución.
+              Se abre tu PayPal (fernando2814).
+            </p>
+            {paid && (
+              <p className="text-sm text-[#d4af37]">
+                PayPal abierto. Cuando veas el pago en tu cuenta, puedes subir el tema a las
+                plataformas.
+              </p>
+            )}
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="flex-1 border border-zinc-600 py-3.5 rounded-full"
+              >
+                Atrás
+              </button>
+              <button
+                type="button"
+                onClick={goPay}
+                className="flex-1 bg-[#d4af37] text-black font-bold py-3.5 rounded-full"
+              >
+                Pagar $10 con PayPal
+              </button>
+            </div>
           </div>
-        </form>
+        )}
       </div>
     </main>
   );
