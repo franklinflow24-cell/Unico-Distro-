@@ -7,8 +7,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// 👇 PON AQUI TU EMAIL - TU VAS A SUBIR GRATIS
-const ADMIN_EMAIL = "TU_EMAIL_AQUI@gmail.com";
+const ADMIN_EMAIL = "franklinflow24@gmail.com";
 
 export default function Home() {
   const [view, setView] = useState<"home" | "auth" | "form">("home");
@@ -230,7 +229,7 @@ export default function Home() {
                 <button onClick={() => window.location.href = "https://www.paypal.com/paypalme/unico2026/5"} className="flex-1 bg-[#d4af37] text-black font-bold py-4 rounded-full">Pagar $5 con PayPal</button>
               )}
             </div>
-            {isAdmin && <p className="text-green-400 text-xs text-center mt-2">Eres Admin, por eso subes gratis</p>}
+            {isAdmin && <p className="text-green-400 text-xs text-center mt-2">Eres Admin franklinflow24@gmail.com, por eso subes gratis</p>}
           </>
         )}
       </div>
