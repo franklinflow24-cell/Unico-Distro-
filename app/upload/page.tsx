@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-const PAYPAL_URL = "https://paypal.me/fernando2814/10USD";
+const PAYPAL_URL = "https://paypal.me/fernando2814/5USD";
 
 export default function UploadPage() {
   const router = useRouter();
@@ -17,7 +17,10 @@ export default function UploadPage() {
   const [releaseDate, setReleaseDate] = useState("");
   const [fileName, setFileName] = useState("");
   const [coverName, setCoverName] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [paid, setPaid] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState("");
 
   useEffect(() => {
     try {
@@ -35,23 +38,56 @@ export default function UploadPage() {
     }
   }, [router]);
 
-  function goPay() {
+  async function goPay() {
+    setSaving(true);
+    setMsg("");
+
     const release = {
       title,
       artist,
       genre,
-      releaseDate,
-      fileName,
-      coverName,
-      fee: "10.00",
+      release_date: releaseDate,
+      file_name: fileName,
+      cover_name: coverName,
+      user_email: user?.email || "",
+      fee: "5.00",
       status: "esperando_paypal",
-      user: user?.email,
-      at: new Date().toISOString(),
+      whatsapp: whatsapp || null,
     };
+
+    // Guarda en Supabase para el admin (si la tabla existe)
+    try {
+      const { createClient } = await import("@supabase/supabase-js");
+      const supabase = createClient(
+        "https://uxaupuajpfdvswnttysv.supabase.co",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4YXVwdWFqcGZkdnN3bnR0eXN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM0MTYxMjIsImV4cCI6MjEwODk5MjEyMn0.cFINxKq7WCHWjCCFSiYQJRht4AyP80MA8A2xiRyBRjM"
+      );
+      const { error } = await supabase.from("releases").insert(release);
+      if (error) {
+        // Si falla (ej. columna whatsapp no existe), intenta sin whatsapp
+        await supabase.from("releases").insert({
+          title: release.title,
+          artist: release.artist,
+          genre: release.genre,
+          release_date: release.release_date,
+          file_name: release.file_name,
+          cover_name: release.cover_name,
+          user_email: release.user_email,
+          fee: release.fee,
+          status: release.status,
+        });
+      }
+    } catch {
+      // sigue con PayPal igual
+    }
+
     const key = "unico_releases";
     const prev = JSON.parse(localStorage.getItem(key) || "[]");
-    localStorage.setItem(key, JSON.stringify([release, ...prev]));
+    localStorage.setItem(key, JSON.stringify([{ ...release, at: new Date().toISOString() }, ...prev]));
+
     setPaid(true);
+    setSaving(false);
+    setMsg("Pedido guardado. Abriendo PayPal…");
     window.open(PAYPAL_URL, "_blank", "noopener,noreferrer");
   }
 
@@ -81,10 +117,13 @@ export default function UploadPage() {
           </a>
         </div>
 
-        <p className="text-xs tracking-[0.3em] text-[#d4af37] mb-2">PASO {step + 1} DE 3</p>
+        <p className="text-xs tracking-[0.3em] text-[#d4af37] mb-2">
+          PASO {step + 1} DE 3
+        </p>
         <h2 className="text-3xl md:text-4xl font-bold mb-2">Subir Música</h2>
         <p className="text-gray-400 mb-8 text-sm">
-          Sesión: {user?.email}. Al final pagas $10 USD con PayPal.
+          Sesión: {user?.email}. Al final pagas <span className="text-[#d4af37] font-semibold">$5 USD</span> con PayPal.
+          Nosotros lo subimos a las plataformas (RouteNote).
         </p>
 
         {step === 0 && (
@@ -99,7 +138,9 @@ export default function UploadPage() {
             <label className="block border-2 border-dashed border-zinc-700 rounded-2xl p-10 text-center cursor-pointer hover:border-[#d4af37]/50">
               <p className="font-medium mb-1">Audio del tema *</p>
               <p className="text-sm text-gray-500 mb-3">WAV, FLAC o MP3</p>
-              <span className="text-[#d4af37] text-sm">{fileName || "Seleccionar archivo"}</span>
+              <span className="text-[#d4af37] text-sm">
+                {fileName || "Seleccionar archivo"}
+              </span>
               <input
                 type="file"
                 accept="audio/*"
@@ -108,6 +149,7 @@ export default function UploadPage() {
                 onChange={(e) => setFileName(e.target.files?.[0]?.name || "")}
               />
             </label>
+
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm text-gray-400 mb-2">Título *</label>
@@ -115,6 +157,7 @@ export default function UploadPage() {
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Nombre de la canción"
                   className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 focus:outline-none focus:border-[#d4af37]"
                 />
               </div>
@@ -124,10 +167,12 @@ export default function UploadPage() {
                   required
                   value={artist}
                   onChange={(e) => setArtist(e.target.value)}
+                  placeholder="Nombre artístico"
                   className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 focus:outline-none focus:border-[#d4af37]"
                 />
               </div>
             </div>
+
             <button
               type="submit"
               className="w-full md:w-auto bg-[#d4af37] text-black font-bold py-3.5 px-8 rounded-full"
@@ -167,7 +212,9 @@ export default function UploadPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Fecha de lanzamiento</label>
+                <label className="block text-sm text-gray-400 mb-2">
+                  Fecha de lanzamiento
+                </label>
                 <input
                   type="date"
                   value={releaseDate}
@@ -176,6 +223,19 @@ export default function UploadPage() {
                 />
               </div>
             </div>
+
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">
+                WhatsApp (para contactarte)
+              </label>
+              <input
+                value={whatsapp}
+                onChange={(e) => setWhatsapp(e.target.value)}
+                placeholder="Ej: 8091234567"
+                className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 focus:outline-none focus:border-[#d4af37]"
+              />
+            </div>
+
             <label className="flex items-center justify-between border border-zinc-700 rounded-2xl p-4 cursor-pointer">
               <span>
                 <span className="block text-sm">Portada *</span>
@@ -190,6 +250,7 @@ export default function UploadPage() {
                 onChange={(e) => setCoverName(e.target.files?.[0]?.name || "")}
               />
             </label>
+
             <div className="flex gap-3">
               <button
                 type="button"
@@ -210,7 +271,7 @@ export default function UploadPage() {
 
         {step === 2 && (
           <div className="border border-zinc-800 rounded-2xl p-6 bg-zinc-950 space-y-4">
-            <h3 className="text-2xl font-bold">Pagar $10 USD con PayPal</h3>
+            <h3 className="text-2xl font-bold">Pagar $5 USD con PayPal</h3>
             <div className="text-sm space-y-2 text-gray-300">
               <p className="flex justify-between border-b border-zinc-800 py-2">
                 <span className="text-gray-500">Canción</span>
@@ -221,18 +282,24 @@ export default function UploadPage() {
                 <span>{artist}</span>
               </p>
               <p className="flex justify-between border-b border-zinc-800 py-2">
+                <span className="text-gray-500">Género</span>
+                <span>{genre}</span>
+              </p>
+              <p className="flex justify-between border-b border-zinc-800 py-2">
                 <span className="text-gray-500">Tarifa</span>
-                <span className="text-[#d4af37] font-bold">$10.00 USD</span>
+                <span className="text-[#d4af37] font-bold">$5.00 USD</span>
               </p>
             </div>
             <p className="text-sm text-gray-400">
-              Las regalías son 100% del artista. Este pago es solo el servicio de distribución.
-              Se abre tu PayPal (fernando2814).
+              Las regalías son 100% del artista. Este pago es solo el servicio de
+              distribución. Después de pagar, nosotros lo subimos a RouteNote /
+              plataformas.
             </p>
+            {msg && <p className="text-sm text-[#d4af37]">{msg}</p>}
             {paid && (
               <p className="text-sm text-[#d4af37]">
-                PayPal abierto. Cuando veas el pago en tu cuenta, puedes subir el tema a las
-                plataformas.
+                PayPal abierto. Cuando veamos el pago, procesamos tu lanzamiento.
+                Soporte: WhatsApp 829-543-5381.
               </p>
             )}
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
@@ -246,9 +313,10 @@ export default function UploadPage() {
               <button
                 type="button"
                 onClick={goPay}
-                className="flex-1 bg-[#d4af37] text-black font-bold py-3.5 rounded-full"
+                disabled={saving}
+                className="flex-1 bg-[#d4af37] text-black font-bold py-3.5 rounded-full disabled:opacity-60"
               >
-                Pagar $10 con PayPal
+                {saving ? "Guardando…" : "Pagar $5 con PayPal"}
               </button>
             </div>
           </div>
