@@ -12,7 +12,7 @@ export default function Home() {
           <div className="text-7xl leading-none font-black text-transparent bg-clip-text bg-gradient-to-b from-[#d4af37] to-[#8a6d2b]">
             U
           </div>
-          <h1 className="mt-2 text-2xl tracking-[0.35em] font-light">UNICO Distro</h1>
+          <h1 className="mt-2 text-2xl tracking-[0.35em] font-light">UNICO DISTRO</h1>
           <p className="mt-1 text-[10px] tracking-[0.45em] text-[#d4af37]">
             MUSIC DISTRIBUTION
           </p>
@@ -24,11 +24,11 @@ export default function Home() {
         </h2>
 
         <p className="mt-5 max-w-2xl text-base text-gray-400 md:text-lg">
-          La distribuidora de RD para nuevos talentos. Sube tu tema, paga{" "}
-          <span className="font-semibold text-[#d4af37]">$5 USD</span> y nosotros
-          lo llevamos a las plataformas. Tú te quedas con el{" "}
-          <span className="font-medium text-white">100% de tus regalías</span>.
-        </p>
+          <p className="mt-5 max-w-2xl text-base text-gray-400 md:text-lg">
+La distribuidora de RD para nuevos talentos. Sube tu tema, paga{" "}
+<span className="font-semibold text-[#f5d37f]">$5 USD</span> por lanzamiento y nosotros
+lo llevamos a las plataformas. Tú conservas tus derechos.
+</p>
 
         <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row">
           <a
