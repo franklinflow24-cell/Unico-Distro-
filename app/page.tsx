@@ -24,56 +24,26 @@ export default function Home(){
         </h2>
 
         <p className="mt-5 max-w-2xl text-base text-gray-400 md:text-lg">
-          <p className="mt-5 max-w-2xl text-base text-gray-400 md:text-lg">
-La distribuidora de RD para nuevos talentos. Sube tu tema, paga{" "}
-<span className="font-semibold text-[#f5d37f]">$5 USD</span> por lanzamiento y nosotros
-lo llevamos a las plataformas. Tú conservas tus derechos.
-</p>
+          La distribuidora de RD para nuevos talentos. Sube tu tema, paga{" "}
+          <span className="font-semibold text-[#f5d37f]">$5 USD</span> por lanzamiento y nosotros
+          lo llevamos a las plataformas. Tú conservas tus derechos.
+        </p>
 
         <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row">
-          <a
-            href="/login"
-            className="rounded-full bg-white px-8 py-3.5 text-sm font-bold text-black"
-          >
-            Subir Música
-          </a>
-          <a
-            href="/login"
-            className="rounded-full border border-white/40 px-8 py-3.5 text-sm font-medium"
-          >
-            Iniciar Sesión
-          </a>
+          <a href="/login" className="rounded-full bg-white px-8 py-3.5 text-sm font-bold text-black">Subir Música</a>
+          <a href="/login" className="rounded-full border border-white/40 px-8 py-3.5 text-sm font-medium">Iniciar Sesión</a>
         </div>
 
-        <a
-          href="https://wa.me/18295435381?text=Hola%20UNICO%20DISTRO%2C%20necesito%20soporte"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-5 inline-flex items-center gap-2 rounded-full border border-[#25D366]/50 bg-[#25D366]/10 px-5 py-2.5 text-sm font-medium text-[#25D366]"
-        >
+        <a href="https://wa.me/18295435381?text=Hola%20UNICO%20DISTRO%2C%20necesito%20soporte" target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex items-center gap-2 rounded-full border border-[#25D366]/50 bg-[#25D366]/10 px-5 py-2.5 text-sm font-medium text-[#25D366]">
           Contactar con soporte (WhatsApp)
         </a>
         <p className="mt-2 text-xs text-gray-600">829-543-5381</p>
 
         <div className="mt-14 w-full">
-          <p className="mb-5 text-xs uppercase tracking-[0.3em] text-gray-500">
-            Disponible en las principales plataformas
-          </p>
+          <p className="mb-5 text-xs uppercase tracking-[0.3em] text-gray-500">Disponible en las principales plataformas</p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-            {[
-              "Spotify",
-              "Apple Music",
-              "Deezer",
-              "TikTok",
-              "YouTube Music",
-              "Amazon Music",
-              "Instagram",
-              "+150 más",
-            ].map((name) => (
-              <div
-                key={name}
-                className="rounded-2xl border border-white/10 bg-white/5 px-3 py-4"
-              >
+            {["Spotify","Apple Music","Deezer","TikTok","YouTube Music","Amazon Music","Instagram","+150 más"].map((name) => (
+              <div key={name} className="rounded-2xl border border-white/10 bg-white/5 px-3 py-4">
                 <p className="font-semibold text-white">{name}</p>
               </div>
             ))}
@@ -84,23 +54,17 @@ lo llevamos a las plataformas. Tú conservas tus derechos.
           <div className="rounded-2xl border border-white/10 bg-zinc-950 p-5">
             <p className="text-xs tracking-widest text-[#d4af37]">01</p>
             <h3 className="mt-2 text-lg font-bold">Sube tu tema</h3>
-            <p className="mt-2 text-sm text-gray-400">
-              Audio, portada y datos del lanzamiento.
-            </p>
+            <p className="mt-2 text-sm text-gray-400">Audio, portada y datos del lanzamiento.</p>
           </div>
           <div className="rounded-2xl border border-white/10 bg-zinc-950 p-5">
             <p className="text-xs tracking-widest text-[#d4af37]">02</p>
             <h3 className="mt-2 text-lg font-bold">Paga $5 USD</h3>
-            <p className="mt-2 text-sm text-gray-400">
-              Un pago por lanzamiento. Regalías 100% tuyas.
-            </p>
+            <p className="mt-2 text-sm text-gray-400">Un pago por lanzamiento. Tú conservas tus derechos.</p>
           </div>
           <div className="rounded-2xl border border-white/10 bg-zinc-950 p-5">
             <p className="text-xs tracking-widest text-[#d4af37]">03</p>
             <h3 className="mt-2 text-lg font-bold">Va a las plataformas</h3>
-            <p className="mt-2 text-sm text-gray-400">
-              Nosotros lo subimos a Spotify, Apple y más.
-            </p>
+            <p className="mt-2 text-sm text-gray-400">Nosotros lo subimos a Spotify, Apple y más.</p>
           </div>
         </div>
 
