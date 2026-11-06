@@ -32,7 +32,7 @@ export default function Home() {
 
         <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row">
           <a
-            href="/upload"
+            href="/login"
             className="rounded-full bg-white px-8 py-3.5 text-sm font-bold text-black"
           >
             Subir Música
