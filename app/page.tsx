@@ -1,58 +1,74 @@
-"use client";
-import { useState } from "react";
+export default function Home(){
+  return(
+    <main className="relative min-h-screen overflow-hidden bg-black text-white">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-24 top-0 h-[420px] w-[420px] rounded-full bg-[#d4af37]/15 blur-[100px] animate-pulse" />
+        <div className="absolute -right-20 bottom-10 h-[380px] w-[380px] rounded-full bg-purple-700/20 blur-[110px] animate-pulse" />
+        <div className="absolute left-1/3 top-1/3 h-[260px] w-[260px] rounded-full bg-cyan-500/10 blur-[90px] animate-pulse" />
+      </div>
 
-export default function Subir() {
-  const [title, setTitle] = useState("");
-  const [artist, setArtist] = useState("");
-  const [email, setEmail] = useState("");
-  const [whatsapp, setWhatsapp] = useState("");
-  const [genre, setGenre] = useState("Dembow");
-  const [subiendo, setSubiendo] = useState(false);
-  const [listo, setListo] = useState(false);
-
-  const handleSubir = async () => {
-    if (!title || !artist) return alert("Pon título y artista");
-    setSubiendo(true);
-    await fetch("/api/submissions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, artist, email, whatsapp, genre })
-    });
-    setSubiendo(false);
-    setListo(true);
-  };
-
-  if (listo) {
-    return (
-      <main className="min-h-screen bg-black text-white flex items-center justify-center px-4">
-        <div className="text-center">
-          <p className="text-5xl">✅</p>
-          <h1 className="text-[24px] font-black mt-3">¡Tema enviado!</h1>
-          <p className="text-gray-400 text-[14px] mt-1">El admin ya fue notificado.</p>
-          <button onClick={() => setListo(false)} className="mt-6 bg-[#d4af37] text-black px-6 py-3 rounded-full font-black">Subir otro tema</button>
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-5xl flex-col items-center px-6 pb-16 pt-14 text-center">
+        <div className="mb-8 flex flex-col items-center">
+          <div className="text-7xl leading-none font-black text-transparent bg-clip-text bg-gradient-to-b from-[#d4af37] to-[#8a6d2b]">
+            U
+          </div>
+          <h1 className="mt-2 text-2xl tracking-[0.35em] font-light">UNICO DISTRO</h1>
+          <p className="mt-1 text-[10px] tracking-[0.45em] text-[#d4af37]">
+            MUSIC DISTRIBUTION
+          </p>
         </div>
-      </main>
-    );
-  }
 
-  return (
-    <main className="min-h-screen bg-black text-white px-4 py-10">
-      <div className="max-w-md mx-auto">
-        <p className="text-[11px] tracking-[0.3em] text-[#d4af37] font-bold text-center">UNICO DISTRO</p>
-        <h1 className="text-[28px] font-black text-center mt-1">Sube tu tema</h1>
-        <p className="text-center text-gray-400 text-[13px]">Distribuye a Spotify, Apple Music, TikTok</p>
-        <div className="mt-6 space-y-3">
-          <input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Nombre del tema" className="w-full bg-zinc-900 border border-white/10 rounded-full px-4 py-3.5 text-[14px] outline-none focus:border-[#d4af37]" />
-          <input value={artist} onChange={e=>setArtist(e.target.value)} placeholder="Nombre del artista" className="w-full bg-zinc-900 border border-white/10 rounded-full px-4 py-3.5 text-[14px] outline-none focus:border-[#d4af37]" />
-          <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="Tu email" className="w-full bg-zinc-900 border border-white/10 rounded-full px-4 py-3.5 text-[14px] outline-none focus:border-[#d4af37]" />
-          <input value={whatsapp} onChange={e=>setWhatsapp(e.target.value)} placeholder="Tu WhatsApp - 829-543-5381" className="w-full bg-zinc-900 border border-white/10 rounded-full px-4 py-3.5 text-[14px] outline-none focus:border-[#d4af37]" />
-          <select value={genre} onChange={e=>setGenre(e.target.value)} className="w-full bg-zinc-900 border border-white/10 rounded-full px-4 py-3.5 text-[14px]">
-            <option>Dembow</option><option>Trap</option><option>Reggaeton</option><option>Afrobeat</option><option>Merengue</option>
-          </select>
-          <button onClick={handleSubir} disabled={subiendo} className="w-full bg-[#d4af37] text-black rounded-full py-4 font-black text-[15px] mt-2">
-            {subiendo ? "SUBIENDO..." : "SUBIR TEMA - $5 →"}
-          </button>
+        <h2 className="max-w-3xl text-4xl font-bold leading-tight md:text-5xl">
+          Distribuye tu música al{" "}
+          <span className="text-[#d4af37]">mundo</span>
+        </h2>
+
+        <p className="mt-5 max-w-2xl text-base text-gray-400 md:text-lg">
+          La distribuidora de RD para nuevos talentos. Sube tu tema, paga{" "}
+          <span className="font-semibold text-[#f5d37f]">$5 USD</span> por lanzamiento y nosotros
+          lo llevamos a las plataformas. Tú conservas tus derechos.
+        </p>
+
+        <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row">
+          <a href="/login" className="rounded-full bg-white px-8 py-3.5 text-sm font-bold text-black">Subir Música</a>
+          <a href="/login" className="rounded-full border border-white/40 px-8 py-3.5 text-sm font-medium">Iniciar Sesión</a>
         </div>
+
+        <a href="https://wa.me/18295435381?text=Hola%20UNICO%20DISTRO%2C%20necesito%20soporte" target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex items-center gap-2 rounded-full border border-[#25D366]/50 bg-[#25D366]/10 px-5 py-2.5 text-sm font-medium text-[#25D366]">
+          Contactar con soporte (WhatsApp)
+        </a>
+        <p className="mt-2 text-xs text-gray-600">829-543-5381</p>
+
+        <div className="mt-14 w-full">
+          <p className="mb-5 text-xs uppercase tracking-[0.3em] text-gray-500">Disponible en las principales plataformas</p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+            {["Spotify","Apple Music","Deezer","TikTok","YouTube Music","Amazon Music","Instagram","+150 más"].map((name) => (
+              <div key={name} className="rounded-2xl border border-white/10 bg-white/5 px-3 py-4">
+                <p className="font-semibold text-white">{name}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-16 grid w-full gap-4 text-left md:grid-cols-3">
+          <div className="rounded-2xl border border-white/10 bg-zinc-950 p-5">
+            <p className="text-xs tracking-widest text-[#d4af37]">01</p>
+            <h3 className="mt-2 text-lg font-bold">Sube tu tema</h3>
+            <p className="mt-2 text-sm text-gray-400">Audio, portada y datos del lanzamiento.</p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-zinc-950 p-5">
+            <p className="text-xs tracking-widest text-[#d4af37]">02</p>
+            <h3 className="mt-2 text-lg font-bold">Paga $5 USD</h3>
+            <p className="mt-2 text-sm text-gray-400">Un pago por lanzamiento. Tú conservas tus derechos.</p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-zinc-950 p-5">
+            <p className="text-xs tracking-widest text-[#d4af37]">03</p>
+            <h3 className="mt-2 text-lg font-bold">Va a las plataformas</h3>
+            <p className="mt-2 text-sm text-gray-400">Nosotros lo subimos a Spotify, Apple y más.</p>
+          </div>
+        </div>
+
+        <p className="mt-16 text-xs text-gray-600">© 2026 UNICO DISTRO</p>
       </div>
     </main>
   );
