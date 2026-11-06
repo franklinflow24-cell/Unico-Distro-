@@ -22,7 +22,6 @@ export default function Admin() {
 
   const aprobar = () => {
     setStatus("APROBADO");
-    // Simula subiendo tienda por tienda como RouteNote
     setTimeout(() => setStores(s => s.map((t,i)=> i===0 ? {...t, state:"live"} : t)), 800);
     setTimeout(() => setStores(s => s.map((t,i)=> i===1 ? {...t, state:"review"} : t)), 1600);
     setTimeout(() => setStores(s => s.map((t,i)=> i===2 ? {...t, state:"live"} : t)), 2400);
@@ -33,18 +32,27 @@ export default function Admin() {
     }, 4500);
   };
 
+  const cerrarSesion = () => {
+    if (confirm("¿Seguro que quieres cerrar sesión del admin?")) {
+      window.location.href = "/";
+    }
+  };
+
   const liveCount = stores.filter(s => s.state === "live").length;
 
   return (
     <main className="min-h-screen bg-black text-white px-4 py-6">
       <div className="max-w-2xl mx-auto">
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between">
           <div>
             <p className="text-[11px] tracking-[0.3em] text-[#d4af37] font-bold">UNICO DISTRO • ADMIN</p>
             <h1 className="text-[28px] font-black leading-none mt-1">Panel de Distribución</h1>
             <p className="text-[13px] text-gray-400 mt-1">Powered by RouteNote • Tú conservas tus derechos</p>
           </div>
-          <div className="h-11 w-11 rounded-full bg-[#d4af37] text-black flex items-center justify-center font-black">U</div>
+          <div className="flex flex-col items-end gap-2">
+            <div className="h-11 w-11 rounded-full bg-[#d4af37] text-black flex items-center justify-center font-black">U</div>
+            <button onClick={cerrarSesion} className="text-[11px] px-3 py-1.5 rounded-full border border-red-500/40 text-red-400 bg-red-500/10 font-bold">Cerrar sesión ✕</button>
+          </div>
         </div>
 
         <div className="grid grid-cols-4 gap-2 mt-6 text-center">
@@ -74,7 +82,6 @@ export default function Admin() {
             </div>
           </div>
 
-          {/* PLAYER REAL */}
           <div className="mx-5 mb-4 bg-black border border-white/10 rounded-xl p-3 flex items-center gap-3">
             <audio ref={audioRef} src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" onEnded={() => setPlaying(false)} />
             <button onClick={togglePlay} className="h-10 w-10 shrink-0 rounded-full bg-white text-black flex items-center justify-center font-bold text-lg">{playing ? "⏸" : "▶"}</button>
@@ -92,14 +99,12 @@ export default function Admin() {
           </div>
 
           <div className="p-5">
-            {/* PROGRESO TIENDAS */}
             <div className="rounded-xl bg-black border border-white/10 p-4">
               <div className="flex justify-between items-center">
                 <p className="text-[11px] text-gray-400">DISTRIBUCIÓN VIA ROUTENOTE • {liveCount}/{stores.length} LIVE</p>
                 <p className="text-[11px] font-bold text-[#d4af37]">{Math.round(liveCount/stores.length*100)}%</p>
               </div>
               <div className="h-2 bg-zinc-800 rounded-full mt-2 overflow-hidden"><div className="h-full bg-[#d4af37] transition-all duration-500" style={{width: `${liveCount/stores.length*100}%`}}></div></div>
-              
               <div className="mt-3 space-y-2">
                 {stores.map((s) => (
                   <div key={s.name} className="flex justify-between text-[13px]">
