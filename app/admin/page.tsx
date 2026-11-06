@@ -1,7 +1,12 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+
+const CLAVE_ADMIN = "unico2026"; // <-- CAMBIA TU CLAVE AQUI
 
 export default function Admin() {
+  const [auth, setAuth] = useState(false);
+  const [clave, setClave] = useState("");
+  const [error, setError] = useState("");
   const [tab, setTab] = useState("pendientes");
   const [status, setStatus] = useState("PENDIENTE");
   const [playing, setPlaying] = useState(false);
@@ -13,6 +18,26 @@ export default function Admin() {
     { name: "Amazon", state: "pending" },
   ]);
   const audioRef = useRef<HTMLAudioElement>(null);
+
+  useEffect(() => {
+    if (localStorage.getItem("unico_admin") === "ok") setAuth(true);
+  }, []);
+
+  const login = () => {
+    if (clave === CLAVE_ADMIN) {
+      localStorage.setItem("unico_admin", "ok");
+      setAuth(true);
+      setError("");
+    } else {
+      setError("Clave incorrecta, intenta de nuevo");
+    }
+  };
+
+  const cerrarSesion = () => {
+    localStorage.removeItem("unico_admin");
+    setAuth(false);
+    setClave("");
+  };
 
   const togglePlay = () => {
     if (!audioRef.current) return;
@@ -32,14 +57,36 @@ export default function Admin() {
     }, 4500);
   };
 
-  const cerrarSesion = () => {
-    if (confirm("¿Seguro que quieres cerrar sesión del admin?")) {
-      window.location.href = "/";
-    }
-  };
-
   const liveCount = stores.filter(s => s.state === "live").length;
 
+  // --- PANTALLA DE INICIAR SESION ---
+  if (!auth) {
+    return (
+      <main className="min-h-screen bg-black text-white flex items-center justify-center px-4">
+        <div className="w-full max-w-sm bg-zinc-900 border border-white/10 rounded-[24px] p-6 text-center">
+          <div className="h-14 w-14 mx-auto rounded-full bg-[#d4af37] text-black flex items-center justify-center font-black text-xl">U</div>
+          <p className="text-[11px] tracking-[0.3em] text-[#d4af37] font-bold mt-4">UNICO DISTRO</p>
+          <h1 className="text-[22px] font-black mt-1">Iniciar Sesión Admin</h1>
+          <p className="text-[13px] text-gray-400 mt-1">Solo el dueño puede entrar aquí</p>
+
+          <input
+            type="password"
+            value={clave}
+            onChange={(e) => setClave(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && login()}
+            placeholder="Escribe tu clave"
+            className="w-full mt-6 bg-black border border-white/20 rounded-full px-4 py-3.5 text-[14px] text-center outline-none focus:border-[#d4af37]"
+          />
+          {error && <p className="text-red-400 text-[12px] mt-2">{error}</p>}
+          <button onClick={login} className="w-full mt-3 bg-[#d4af37] text-black rounded-full py-3.5 font-black text-[14px]">ENTRAR →</button>
+          <button onClick={() => window.location.href = "/"} className="text-[12px] text-gray-500 mt-4">← Volver a la página principal</button>
+          <p className="text-[11px] text-gray-600 mt-6">Clave de prueba: unico2026</p>
+        </div>
+      </main>
+    );
+  }
+
+  // --- PANEL ADMIN ---
   return (
     <main className="min-h-screen bg-black text-white px-4 py-6">
       <div className="max-w-2xl mx-auto">
@@ -127,7 +174,6 @@ export default function Admin() {
             </div>
           </div>
         </div>
-
         <p className="text-center text-[11px] text-gray-600 mt-8">UNICO DISTRO © 2026 • Distribución vía RouteNote • Hecho en RD</p>
       </div>
     </main>
