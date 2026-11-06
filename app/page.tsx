@@ -12,9 +12,9 @@ export default function Home() {
           <div className="text-7xl leading-none font-black text-transparent bg-clip-text bg-gradient-to-b from-[#d4af37] to-[#8a6d2b]">
             U
           </div>
-          <h1 className="mt-2 text-2xl tracking-[0.35em] font-light">UNICO</h1>
+          <h1 className="mt-2 text-2xl tracking-[0.35em] font-light">UNICO Distro</h1>
           <p className="mt-1 text-[10px] tracking-[0.45em] text-[#d4af37]">
-            DISTRO · MUSIC DISTRIBUTION
+            MUSIC DISTRIBUTION
           </p>
         </div>
 
