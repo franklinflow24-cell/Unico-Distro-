@@ -45,23 +45,35 @@ export default function Home() {
     setShowForm(true);
   };
 
+  const loginWithGoogle = () => {
+    // Por ahora entra directo con Google - luego lo conectamos a tu Google Cloud
+    // Si quieres el real con Firebase, te lo conecto en el siguiente paso
+    const googleEmail = prompt("Entra con Google - pon tu Gmail para probar:");
+    if (googleEmail) {
+      localStorage.setItem("unico_user", googleEmail);
+      localStorage.setItem("unico_provider", "google");
+      setIsLogged(true);
+      setUserEmail(googleEmail);
+      setShowLogin(false);
+      setShowForm(true);
+    }
+  };
+
   const doLogout = () => {
     localStorage.removeItem("unico_user");
+    localStorage.removeItem("unico_provider");
     setIsLogged(false);
     setUserEmail("");
     setShowForm(false);
   };
 
-  // === NUEVO: CHEQUEA 3000x3000 ===
   const onCoverChange = (file: File | null) => {
     if (!file) return;
     setCoverFile(file);
     const url = URL.createObjectURL(file);
     setCoverPreview(url);
     const img = new Image();
-    img.onload = () => {
-      setCoverSize(`${img.width}x${img.height}`);
-    };
+    img.onload = () => setCoverSize(`${img.width}x${img.height}`);
     img.src = url;
   };
 
@@ -88,11 +100,24 @@ export default function Home() {
             <h1 className="mt-2 text-xl tracking-[0.3em]">UNICO DISTRO</h1>
             <p className="text-zinc-400 text-sm mt-2">Inicia sesión para subir tu música</p>
           </div>
+
+          {/* BOTON GOOGLE */}
+          <button onClick={loginWithGoogle} className="w-full bg-white text-black font-bold py-4 rounded-full mt-6 flex items-center justify-center gap-2">
+            <span className="text-[18px] font-black">G</span> Continuar con Google
+          </button>
+
+          <div className="flex items-center gap-3 my-5">
+            <div className="h-[1px] flex-1 bg-zinc-700" />
+            <span className="text-zinc-500 text-xs">o con email</span>
+            <div className="h-[1px] flex-1 bg-zinc-700" />
+          </div>
+
           <label className={labelCls}>Email *</label>
           <input value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="tu@email.com" className={inputCls} />
           <label className={labelCls}>Contraseña *</label>
           <input type="password" value={loginPass} onChange={e => setLoginPass(e.target.value)} placeholder="••••••••" className={inputCls} />
           <button onClick={doLogin} className="w-full bg-[#d4af37] text-black font-bold py-4 rounded-full mt-6">Entrar y Subir Música</button>
+          <p className="text-center text-zinc-500 text-xs mt-4">¿No tienes cuenta? Al poner tu email y contraseña se crea automáticamente.</p>
         </div>
       </div>
     );
@@ -117,7 +142,6 @@ export default function Home() {
               <input ref={audioRef} type="file" accept=".wav,.flac,.mp3" className="hidden" onChange={e => setAudioFile(e.target.files?.[0] || null)} />
             </div>
 
-            {/* PORTADA 3000x3000 CON PREVIEW */}
             <div className="mt-4">
               <p className="font-bold">2. Portada * - Debe ser 3000x3000</p>
               <div onClick={() => coverRef.current?.click()} className="mt-2 border border-zinc-700 rounded-[20px] overflow-hidden cursor-pointer bg-zinc-900">
@@ -128,7 +152,7 @@ export default function Home() {
                       <div>
                         <p className="text-sm font-bold">{coverFile?.name}</p>
                         <p className={`text-sm ${coverSize === "3000x3000" ? "text-green-400" : "text-yellow-400"}`}>
-                          Tamaño detectado: {coverSize} {coverSize === "3000x3000" ? "✓ Perfecto" : "⚠ Spotify pide 3000x3000"}
+                          Tamaño: {coverSize} {coverSize === "3000x3000" ? "✓ Perfecto" : "⚠ Pide 3000x3000"}
                         </p>
                       </div>
                       <span className="text-[#d4af37] text-sm">Cambiar</span>
@@ -139,14 +163,10 @@ export default function Home() {
                     <div className="w-[200px] h-[200px] border-2 border-dashed border-zinc-600 rounded-[16px] flex items-center justify-center">
                       <p className="text-zinc-500 text-sm">3000 x 3000<br/>Toca para subir<br/>JPG / PNG</p>
                     </div>
-                    <p className="text-zinc-500 text-xs mt-4">La imagen se verá cuadrada 3000x3000 como en Spotify</p>
                   </div>
                 )}
               </div>
               <input ref={coverRef} type="file" accept="image/*" className="hidden" onChange={e => onCoverChange(e.target.files?.[0] || null)} />
-              {coverSize && coverSize !== "3000x3000" && (
-                <p className="text-yellow-400 text-xs mt-2">Tu imagen es {coverSize}. Trata de subirla en 3000x3000 para que no se vea borrosa en Spotify. Puedes agrandarla en Canva gratis.</p>
-              )}
             </div>
 
             <label className={labelCls}>Título de la canción *</label>
@@ -226,7 +246,6 @@ export default function Home() {
             <input type="date" value={f.fecha} onChange={e => set("fecha", e.target.value)} className={inputCls} />
             <label className={labelCls}>Sello</label>
             <input value={f.sello} onChange={e => set("sello", e.target.value)} className={inputCls} />
-            {/* Mini preview de como se verá en Spotify */}
             {coverPreview && (
               <div className="mt-5 flex gap-3 items-center bg-zinc-900 p-3 rounded-[16px]">
                 <img src={coverPreview} className="w-[56px] h-[56px] rounded-[8px] object-cover" />
@@ -271,7 +290,6 @@ export default function Home() {
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -left-24 top-0 h-[420px] w-[420px] rounded-full bg-[#d4af37]/15 blur-[100px] animate-pulse" />
         <div className="absolute -right-20 bottom-10 h-[380px] w-[380px] rounded-full bg-purple-700/20 blur-[110px] animate-pulse" />
-        <div className="absolute left-1/3 top-1/3 h-[260px] w-[260px] rounded-full bg-cyan-500/10 blur-[90px] animate-pulse" />
       </div>
 
       <div className="relative z-10 mx-auto flex min-h-screen max-w-5xl flex-col items-center px-6 pb-16 pt-14 text-center">
