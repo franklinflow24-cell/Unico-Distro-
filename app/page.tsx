@@ -1,5 +1,11 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 export default function Home() {
   const [view, setView] = useState<"home" | "auth" | "form">("home");
@@ -30,25 +36,46 @@ export default function Home() {
   const labelCls = "text-zinc-300 text-[14px] mb-1 block mt-4";
 
   useEffect(() => {
-    const saved = localStorage.getItem("unico_user");
-    if (saved) setUserEmail(saved);
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.user) {
+        setUserEmail(data.session.user.email || "");
+        // Si viene de Google, no lo metemos de una vez al form, lo dejamos en home logueado
+      }
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_, session) => {
+      if (session?.user) {
+        setUserEmail(session.user.email || "");
+        setView("form");
+      } else {
+        setUserEmail("");
+      }
+    });
+    return () => listener.subscription.unsubscribe();
   }, []);
 
-  const entrar = () => {
+  const entrar = async () => {
     if (!email || !pass) return alert("Pon email y contraseña");
-    if (authTab === "crear" && !nombreCuenta) return alert("Pon tu nombre para crear la cuenta");
-    localStorage.setItem("unico_user", email);
-    setUserEmail(email);
-    setView("form");
+    if (authTab === "crear") {
+      if (!nombreCuenta) return alert("Pon tu nombre para crear la cuenta");
+      const { error } = await supabase.auth.signUp({ email, password: pass, options: { data: { nombre: nombreCuenta } } });
+      if (error) return alert(error.message);
+      alert("Cuenta creada, revisa tu email para confirmar y luego entra");
+      setAuthTab("login");
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
+      if (error) return alert("Email o contraseña mal, o crea tu cuenta");
+    }
   };
 
-  const loginGoogle = () => {
-    // Conecta aquí tu Supabase o Firebase para Google real
-    // Por ahora usa el Gmail del sistema para que no salga el cuadrito feo
-    const gEmail = email || "tu@gmail.com";
-    localStorage.setItem("unico_user", gEmail);
-    setUserEmail(gEmail);
-    setView("form");
+  // ESTE YA ES GOOGLE DE VERDAD - ABRE LA VENTANA DE GOOGLE
+  const loginGoogle = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin,
+        queryParams: { prompt: "select_account" } // obliga a elegir cuenta como todas las páginas
+      }
+    });
   };
 
   const onCover = (file: File | null) => {
@@ -61,7 +88,13 @@ export default function Home() {
     img.src = url;
   };
 
-  // ===== VISTA CREAR CUENTA / LOGIN =====
+  const logout = async () => {
+    await supabase.auth.signOut();
+    localStorage.removeItem("unico_user");
+    setUserEmail("");
+    setView("home");
+  };
+
   if (view === "auth") {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center px-5">
@@ -73,9 +106,11 @@ export default function Home() {
             <p className="text-zinc-400 text-sm mt-2">{authTab === "login" ? "Inicia sesión para subir tu música" : "Crea tu cuenta gratis"}</p>
           </div>
 
+          {/* GOOGLE REAL - YA NO ENTRA DE UNA VEZ */}
           <button onClick={loginGoogle} className="w-full bg-white text-black font-bold py-4 rounded-full mt-6 flex items-center justify-center gap-2">
-            <span className="font-black text-[18px]">G</span> Continuar con Google
+            <img src="https://www.google.com/favicon.ico" className="w-5 h-5" /> Continuar con Google
           </button>
+          <p className="text-center text-zinc-500 text-[11px] mt-2">Te abrirá la ventana de Google para elegir tu cuenta</p>
 
           <div className="flex gap-2 mt-5 bg-zinc-900 p-1 rounded-full">
             <button onClick={() => setAuthTab("login")} className={`flex-1 py-2.5 rounded-full text-sm font-bold ${authTab === "login" ? "bg-[#d4af37] text-black" : "text-zinc-400"}`}>Iniciar Sesión</button>
@@ -95,21 +130,17 @@ export default function Home() {
           <button onClick={entrar} className="w-full bg-[#d4af37] text-black font-bold py-4 rounded-full mt-6">
             {authTab === "login" ? "Entrar y Subir Música" : "Crear Cuenta y Subir Música"}
           </button>
-          <p className="text-center text-zinc-500 text-xs mt-3">
-            {authTab === "login" ? "¿No tienes cuenta? Dale arriba a Crear Cuenta" : "Al crear tu cuenta aceptas que eres dueño de tu música"}
-          </p>
         </div>
       </div>
     );
   }
 
-  // ===== FORMULARIO TIPO DISTROKID =====
   if (view === "form") {
     return (
       <div className="min-h-screen bg-black text-white px-5 py-8 max-w-[600px] mx-auto">
         <div className="flex justify-between items-center">
           <button onClick={() => setView("home")} className="text-zinc-400 text-sm">← Volver</button>
-          <p className="text-xs text-zinc-400">{userEmail} <span onClick={() => { localStorage.removeItem("unico_user"); setView("home"); }} className="text-red-400 cursor-pointer ml-2">Salir</span></p>
+          <p className="text-xs text-zinc-400">{userEmail} <span onClick={logout} className="text-red-400 cursor-pointer ml-2">Salir</span></p>
         </div>
         <p className="text-[#d4af37] tracking-[0.3em] text-[12px] mt-4">PASO {paso} DE 4 - COMO DISTROKID</p>
         <h1 className="text-[32px] font-black mt-1">Subir Lanzamiento</h1>
@@ -122,7 +153,6 @@ export default function Home() {
               <input ref={audioRef} type="file" accept=".wav,.flac,.mp3" className="hidden" onChange={e => setAudioFile(e.target.files?.[0] || null)} />
             </div>
 
-            {/* FOTO 3000x3000 QUE SE VE */}
             <div className="mt-4">
               <p className="font-bold">Portada * - Tiene que ser 3000x3000</p>
               <div onClick={() => coverRef.current?.click()} className="mt-2 border border-zinc-700 rounded-[20px] overflow-hidden cursor-pointer bg-zinc-900">
@@ -132,7 +162,7 @@ export default function Home() {
                     <div className="p-4 flex justify-between items-center">
                       <div>
                         <p className="text-sm font-bold">{coverFile?.name}</p>
-                        <p className={`text-sm ${coverSize === "3000x3000" ? "text-green-400" : "text-yellow-400"}`}>Tamaño: {coverSize} {coverSize === "3000x3000" ? "✓ Perfecto para Spotify" : "⚠ Spotify pide 3000x3000"}</p>
+                        <p className={`text-sm ${coverSize === "3000x3000" ? "text-green-400" : "text-yellow-400"}`}>Tamaño: {coverSize} {coverSize === "3000x3000" ? "✓ Perfecto" : "⚠ Pide 3000x3000"}</p>
                       </div>
                       <span className="text-[#d4af37] text-sm">Cambiar</span>
                     </div>
@@ -142,14 +172,13 @@ export default function Home() {
                     <div className="w-[220px] h-[220px] border-2 border-dashed border-zinc-600 rounded-[16px] flex items-center justify-center text-center">
                       <p className="text-zinc-500 text-sm">3000 x 3000<br/>Toca para subir<br/>Aquí se va a ver</p>
                     </div>
-                    <p className="text-zinc-500 text-xs mt-3">Cuando subas tu portada se ve aquí grande</p>
                   </div>
                 )}
               </div>
               <input ref={coverRef} type="file" accept="image/*" className="hidden" onChange={e => onCover(e.target.files?.[0] || null)} />
             </div>
 
-            <label className={labelCls}>Título de la canción *</label>
+            <label className={labelCls}>Título *</label>
             <input value={f.titulo} onChange={e => set("titulo", e.target.value)} placeholder="Nombre de tu canción" className={inputCls} />
             <button onClick={() => { if (!audioFile || !f.titulo) return alert("Falta audio y título"); setPaso(2); }} className="w-full bg-[#d4af37] text-black font-bold py-4 rounded-full mt-6">Continuar → Artista</button>
           </>
@@ -160,32 +189,26 @@ export default function Home() {
             <h2 className="font-bold text-lg mt-6">Info del artista - como DistroKid</h2>
             <label className={labelCls}>Nombre artístico *</label>
             <input value={f.artista} onChange={e => set("artista", e.target.value)} placeholder="Tu nombre artístico" className={inputCls} />
-            <label className={labelCls}>Nombre personal / legal * (para regalías)</label>
+            <label className={labelCls}>Nombre personal / legal *</label>
             <input value={f.nombrePersonal} onChange={e => set("nombrePersonal", e.target.value)} placeholder="Tu nombre real" className={inputCls} />
             <label className={labelCls}>Cédula</label>
             <input value={f.cedula} onChange={e => set("cedula", e.target.value)} placeholder="Tu cédula" className={inputCls} />
-
             <label className={labelCls}>¿Cantas solo? *</label>
             <select value={f.cantaSolo} onChange={e => set("cantaSolo", e.target.value)} className={inputCls}>
-              <option value="Si">Sí - Canto solo</option>
-              <option value="No">No - Somos varios</option>
+              <option value="Si">Sí - Canto solo</option><option value="No">No - Somos varios</option>
             </select>
-
-            <label className={labelCls}>¿Cuántos artistas en total?</label>
+            <label className={labelCls}>¿Cuántos artistas?</label>
             <select value={f.numArtistas} onChange={e => set("numArtistas", e.target.value)} className={inputCls}>
               <option value="1">1 artista</option><option value="2">2 artistas</option><option value="3">3 artistas</option><option value="4">4 o más</option>
             </select>
-
             {f.cantaSolo === "No" && (
               <>
-                <label className={labelCls}>Featuring / Otros artistas</label>
+                <label className={labelCls}>Featuring</label>
                 <input value={f.featuring} onChange={e => set("featuring", e.target.value)} placeholder="Nombres de los otros" className={inputCls} />
               </>
             )}
-
-            <label className={labelCls}>Instagram del artista</label>
+            <label className={labelCls}>Instagram</label>
             <input value={f.instagram} onChange={e => set("instagram", e.target.value)} placeholder="@tuinstagram" className={inputCls} />
-
             <div className="flex gap-3 mt-6">
               <button onClick={() => setPaso(1)} className="flex-1 border border-zinc-600 py-4 rounded-full">Atrás</button>
               <button onClick={() => { if (!f.artista || !f.nombrePersonal) return alert("Falta artista y nombre personal"); setPaso(3); }} className="flex-1 bg-[#d4af37] text-black font-bold py-4 rounded-full">Continuar</button>
@@ -198,25 +221,22 @@ export default function Home() {
             <h2 className="font-bold text-lg mt-6">Derechos y letra</h2>
             <label className={labelCls}>¿Es un Cover? *</label>
             <select value={f.esCover} onChange={e => set("esCover", e.target.value)} className={inputCls}>
-              <option value="No">No - Tema original mío</option><option value="Si">Sí - Cover de otro artista</option>
+              <option value="No">No - Original mío</option><option value="Si">Sí - Cover</option>
             </select>
             {f.esCover === "Si" && (
               <>
-                <label className={labelCls}>¿De quién es la canción original?</label>
+                <label className={labelCls}>¿De quién es la original?</label>
                 <input value={f.coverDe} onChange={e => set("coverDe", e.target.value)} placeholder="Artista original" className={inputCls} />
               </>
             )}
-            <label className={labelCls}>Compositor / Quién escribió *</label>
-            <input value={f.compositor} onChange={e => set("compositor", e.target.value)} placeholder="Quién escribió la letra" className={inputCls} />
-            <label className={labelCls}>Productor / Quién hizo el beat *</label>
+            <label className={labelCls}>Compositor *</label>
+            <input value={f.compositor} onChange={e => set("compositor", e.target.value)} placeholder="Quién escribió" className={inputCls} />
+            <label className={labelCls}>Productor *</label>
             <input value={f.productor} onChange={e => set("productor", e.target.value)} placeholder="Quién hizo el beat" className={inputCls} />
-
-            <label className={labelCls}>¿La letra es explícita? * (tiene malas palabras)</label>
+            <label className={labelCls}>¿Letra explícita? *</label>
             <select value={f.explicito} onChange={e => set("explicito", e.target.value)} className={inputCls}>
-              <option value="No">No - Limpia</option>
-              <option value="Si">Sí - Explícita</option>
+              <option value="No">No - Limpia</option><option value="Si">Sí - Explícita</option>
             </select>
-
             <label className={labelCls}>Género *</label>
             <select value={f.genero} onChange={e => set("genero", e.target.value)} className={inputCls}>
               <option value="">Selecciona</option><option>Dembow</option><option>Reggaeton</option><option>Trap</option><option>Drill</option><option>Merengue</option><option>Bachata</option><option>Otro</option>
@@ -225,17 +245,15 @@ export default function Home() {
             <select value={f.idioma} onChange={e => set("idioma", e.target.value)} className={inputCls}>
               <option>Español</option><option>Inglés</option><option>Spanglish</option><option>Otro</option>
             </select>
-            <label className={labelCls}>Fecha de lanzamiento</label>
+            <label className={labelCls}>Fecha lanzamiento</label>
             <input type="date" value={f.fecha} onChange={e => set("fecha", e.target.value)} className={inputCls} />
-
             {coverPreview && (
               <div className="mt-5 flex gap-3 items-center bg-zinc-900 p-3 rounded-[16px]">
                 <img src={coverPreview} className="w-[56px] h-[56px] rounded-[8px] object-cover" />
-                <div className="text-left"><p className="font-bold text-sm">{f.titulo || "Tu canción"}</p><p className="text-zinc-400 text-xs">{f.artista || "Tu nombre"} • {f.explicito === "Si" ? "Explicit" : "Clean"} • {f.genero}</p></div>
+                <div className="text-left"><p className="font-bold text-sm">{f.titulo || "Tu canción"}</p><p className="text-zinc-400 text-xs">{f.artista || "Tu nombre"} • {f.explicito === "Si" ? "Explicit" : "Clean"}</p></div>
                 {f.explicito === "Si" && <span className="ml-auto text-[10px] border border-zinc-500 px-1.5 py-0.5">E</span>}
               </div>
             )}
-
             <div className="flex gap-3 mt-6">
               <button onClick={() => setPaso(2)} className="flex-1 border border-zinc-600 py-4 rounded-full">Atrás</button>
               <button onClick={() => setPaso(4)} className="flex-1 bg-[#d4af37] text-black font-bold py-4 rounded-full">Continuar</button>
@@ -248,21 +266,16 @@ export default function Home() {
             <h2 className="font-bold text-lg mt-6">Pago y regalías</h2>
             <label className={labelCls}>WhatsApp *</label>
             <input value={f.whatsapp} onChange={e => set("whatsapp", e.target.value)} placeholder="8091234567" className={inputCls} />
-            <label className={labelCls}>Email donde te llegan las regalías *</label>
+            <label className={labelCls}>Email regalías *</label>
             <input value={f.emailRegalias} onChange={e => set("emailRegalias", e.target.value)} placeholder="tu@email.com" className={inputCls} />
-
             <div className="mt-5 bg-zinc-900 rounded-[16px] p-4 text-sm space-y-2">
               <div className="flex justify-between"><span className="text-zinc-400">Tema</span><span>{f.titulo}</span></div>
-              <div className="flex justify-between"><span className="text-zinc-400">Artístico</span><span>{f.artista}</span></div>
-              <div className="flex justify-between"><span className="text-zinc-400">Personal</span><span>{f.nombrePersonal}</span></div>
-              <div className="flex justify-between"><span className="text-zinc-400">Canta solo?</span><span>{f.cantaSolo} - {f.numArtistas} artista(s) {f.featuring}</span></div>
-              <div className="flex justify-between"><span className="text-zinc-400">Cover?</span><span>{f.esCover} {f.coverDe}</span></div>
-              <div className="flex justify-between"><span className="text-zinc-400">Compositor / Prod</span><span>{f.compositor} / {f.productor}</span></div>
+              <div className="flex justify-between"><span className="text-zinc-400">Artístico / Personal</span><span>{f.artista} / {f.nombrePersonal}</span></div>
+              <div className="flex justify-between"><span className="text-zinc-400">Canta solo?</span><span>{f.cantaSolo} - {f.numArtistas}</span></div>
               <div className="flex justify-between"><span className="text-zinc-400">Explícita?</span><span>{f.explicito}</span></div>
               <div className="flex justify-between"><span className="text-zinc-400">Portada</span><span>{coverSize}</span></div>
               <div className="flex justify-between"><span className="text-zinc-400">Total</span><span className="text-[#d4af37] font-bold">$5 USD</span></div>
             </div>
-
             <div className="flex gap-3 mt-4">
               <button onClick={() => setPaso(3)} className="flex-1 border border-zinc-600 py-4 rounded-full">Atrás</button>
               <button onClick={() => window.location.href = "https://www.paypal.com/paypalme/unico2026/5"} className="flex-1 bg-[#d4af37] text-black font-bold py-4 rounded-full">Pagar $5 con PayPal</button>
@@ -273,7 +286,6 @@ export default function Home() {
     );
   }
 
-  // ===== TU HOME ORIGINAL - NO SE TOCO EL DISEÑO =====
   return (
     <div className="relative min-h-screen overflow-hidden bg-black text-white">
       <div className="pointer-events-none absolute inset-0">
@@ -287,7 +299,7 @@ export default function Home() {
           <div className="text-7xl leading-none font-black text-transparent bg-clip-text bg-gradient-to-b from-[#d4af37] to-[#8a6d2b]">U</div>
           <h1 className="mt-2 text-2xl tracking-[0.35em] font-light">UNICO DISTRO</h1>
           <p className="mt-1 text-[10px] tracking-[0.45em] text-[#d4af37]">MUSIC DISTRIBUTION</p>
-          {userEmail && <p className="mt-2 text-xs text-green-400">Logueado: {userEmail}</p>}
+          {userEmail && <p className="mt-2 text-xs text-green-400">Logueado: {userEmail} - <span onClick={logout} className="underline cursor-pointer">Salir</span></p>}
         </div>
 
         <h2 className="max-w-3xl text-4xl font-bold leading-tight md:text-5xl">
