@@ -1,5 +1,5 @@
-export default function Home() {
-  return (
+export default function Home(){
+  return(
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -left-24 top-0 h-[420px] w-[420px] rounded-full bg-[#d4af37]/15 blur-[100px] animate-pulse" />
