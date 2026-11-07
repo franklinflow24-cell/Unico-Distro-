@@ -154,17 +154,14 @@ export default function Home() {
         <p className="text-zinc-400 text-sm">{userEmail}</p>
         <button onClick={() => setView("form")} className="w-full bg-[#d4af37] text-black font-bold py-4 rounded-full mt-6">Subir Nuevo Tema</button>
         {misReleases.length === 0 && <p className="text-center text-zinc-500 mt-10">Todavia no has subido nada.</p>}
-        {misReleases.map((r) => {
-          return (
-            <div key={r.id} className="mt-4 bg-zinc-900 border border-zinc-800 rounded-[16px] p-4">
-              <p className="font-bold">{r.title}</p>
-              <p className="text-zinc-400 text-sm">{r.artist} - {r.genre}</p>
-              <p className="text-zinc-500 text-xs mt-1">Audio: {r.file_name} Portada: {r.cover_size}</p>
-              <p className="mt-2 text-[12px] font-bold text-yellow-400">{r.status}</p>
-            </div>
-          );
-        })}
-      </div>
+       {misReleases.map((r) => (
+<div key={r.id} className="mt-4 bg-zinc-900 border border-zinc-800 rounded-[16px] p-4">
+<p className="font-bold">{r.title}</p>
+<p className="text-zinc-400 text-sm">{r.artist} - {r.genre}</p>
+<p className="text-zinc-500 text-xs mt-1">Audio: {r.file_name} Portada: {r.cover_size}</p>
+<p className="mt-2 text-[12px] font-bold text-yellow-400">{r.status}</p>
+</div>
+))} 
     );
   }
 
