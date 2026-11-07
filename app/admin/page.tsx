@@ -203,8 +203,7 @@ export default function Admin() {
         {loading && <p className="mt-6 text-gray-500">Cargando…</p>}
         {!loading && filtered.length === 0 && (
           <p className="mt-8 text-center text-gray-500">
-            No hay pedidos todavía. Cuando un artista complete el pago, aparecen
-            aquí.
+            No hay pedidos todavía.
           </p>
         )}
 
@@ -285,7 +284,7 @@ export default function Admin() {
                 </button>
                 {r.whatsapp && (
                   <a
-                    href={`https://wa.me/1${r.whatsapp.replace(/\D/g, "")}`}
+                    href={`https://wa.me/1${String(r.whatsapp).replace(/\D/g, "")}`}
                     target="_blank"
                     rel="noreferrer"
                     className="text-xs px-3 py-2 rounded-full border border-[#25D366]/50 text-[#25D366]"
