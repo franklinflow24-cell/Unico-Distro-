@@ -1,302 +1,255 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 
-const CLAVE_ADMIN = "unico2026";
-
 const supabase = createClient(
-  "https://uxaupuajpfdvswnttysv.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4YXVwdWFqcGZkdnN3bnR0eXN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM0MTYxMjIsImV4cCI6MjEwODk5MjEyMn0.cFINxKq7WCHWjCCFSiYQJRht4AyP80MA8A2xiRyBRjM"
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://uxaupuajpfdvswnttysv.supabase.co",
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4YXVwdWFqcGZkdnN3bnR0eXN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM0MTYxMjIsImV4cCI6MjEwODk5MjEyMn0.cFINxKq7WCHWjCCFSiYQJRht4AyP80MA8A2xiRyBRjM"
 );
 
-type Release = {
-  id: string;
-  created_at: string;
-  title: string | null;
-  artist: string | null;
-  nombre_personal: string | null;
-  genre: string | null;
-  release_date: string | null;
-  file_name: string | null;
-  cover_name: string | null;
-  cover_size: string | null;
-  user_email: string | null;
-  whatsapp: string | null;
-  email_regalias: string | null;
-  compositor: string | null;
-  productor: string | null;
-  explicito: string | null;
-  canta_solo: string | null;
-  featuring: string | null;
-  fee: string | null;
-  status: string | null;
-};
+const ADMIN_EMAIL = "franklinflow24@gmail.com";
+const PAYPAL_URL = "https://paypal.me/fernando2814/5USD";
+const WHATSAPP_SOPORTE = "18295435381";
 
-export default function Admin() {
-  const [auth, setAuth] = useState(false);
-  const [clave, setClave] = useState("");
-  const [error, setError] = useState("");
-  const [items, setItems] = useState<Release[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [filter, setFilter] = useState("todos");
+export default function Home() {
+  const [view, setView] = useState<"home" | "auth" | "form" | "mis">("home");
+  const [authTab, setAuthTab] = useState<"login" | "crear">("login");
+  const [userEmail, setUserEmail] = useState("");
+  const [email, setEmail] = useState("");
+  const [pass, setPass] = useState("");
+  const [nombreCuenta, setNombreCuenta] = useState("");
+  const [paso, setPaso] = useState(1);
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState("");
+  const [coverSize, setCoverSize] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [misReleases, setMisReleases] = useState<any[]>([]);
+  const audioRef = useRef<HTMLInputElement>(null);
+  const coverRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (localStorage.getItem("unico_admin") === "ok") setAuth(true);
-  }, []);
+  const isAdmin = userEmail.toLowerCase() === ADMIN_EMAIL.toLowerCase();
 
-  useEffect(() => {
-    if (auth) load();
-  }, [auth]);
-
-  async function load() {
-    setLoading(true);
-    const { data, error: err } = await supabase
-      .from("releases")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (err) {
-      setError(err.message);
-      setItems([]);
-    } else {
-      setError("");
-      setItems((data as Release[]) || []);
-    }
-    setLoading(false);
-  }
-
-  function login() {
-    if (clave === CLAVE_ADMIN) {
-      localStorage.setItem("unico_admin", "ok");
-      setAuth(true);
-      setError("");
-    } else setError("Clave incorrecta");
-  }
-
-  async function setStatus(id: string, status: string) {
-    await supabase.from("releases").update({ status }).eq("id", id);
-    await load();
-  }
-
-  const filtered = items.filter((r) => {
-    if (filter === "todos") return true;
-    return (r.status || "") === filter;
+  const [f, setF] = useState({
+    titulo: "",
+    artista: "",
+    nombrePersonal: "",
+    cedula: "",
+    cantaSolo: "Si",
+    numArtistas: "1",
+    featuring: "",
+    esCover: "No",
+    coverDe: "",
+    compositor: "",
+    productor: "",
+    explicito: "No",
+    genero: "",
+    idioma: "Español",
+    fecha: "",
+    whatsapp: "",
+    emailRegalias: "",
+    sello: "UNICO DISTRO",
+    instagram: "",
   });
 
-  const count = (s: string) => items.filter((r) => r.status === s).length;
+  const set = (k: string, v: string) => setF({ ...f, [k]: v });
+  const inputCls = "w-full bg-[#1a1a1a] border border-zinc-700 rounded-[16px] px-4 py-4 text-white outline-none focus:border-[#d4af37] text-[15px]";
+  const labelCls = "text-zinc-300 text-[14px] mb-1 block mt-4";
 
-  if (!auth) {
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.user) setUserEmail(data.session.user.email || "");
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_, session) => {
+      if (session?.user) {
+        setUserEmail(session.user.email || "");
+        setView("form");
+      }
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  const cargarMis = async (emailToUse: string) => {
+    if (!emailToUse) return;
+    const { data } = await supabase.from("releases").select("*").eq("user_email", emailToUse).order("id", { ascending: false });
+    if (data) setMisReleases(data);
+  };
+
+  const loginGoogle = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin, queryParams: { prompt: "select_account" } },
+    });
+  };
+
+  const entrar = async () => {
+    if (!email || !pass) return alert("Pon email y contraseña");
+    if (authTab === "crear") {
+      if (!nombreCuenta) return alert("Pon tu nombre");
+      const { error } = await supabase.auth.signUp({ email, password: pass });
+      if (error) return alert(error.message);
+      alert("Cuenta creada, ahora entra");
+      setAuthTab("login");
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
+      if (error) return alert("Mal, crea tu cuenta");
+      setView("form");
+    }
+  };
+
+  const onCover = (file: File | null) => {
+    if (!file) return;
+    setCoverFile(file);
+    const url = URL.createObjectURL(file);
+    setCoverPreview(url);
+    const img = new Image();
+    img.onload = () => setCoverSize(`${img.width}x${img.height}`);
+    img.src = url;
+  };
+
+  const guardarYPagar = async () => {
+    if (!f.whatsapp) return alert("Pon tu WhatsApp");
+    if (!f.titulo || !f.artista) return alert("Falta título o artista");
+    setSaving(true);
+    const row = {
+      title: f.titulo,
+      artist: f.artista,
+      nombre_personal: f.nombrePersonal,
+      cedula: f.cedula,
+      genre: f.genero,
+      release_date: f.fecha,
+      file_name: audioFile?.name || "",
+      cover_name: coverFile?.name || "",
+      cover_size: coverSize,
+      user_email: userEmail,
+      whatsapp: f.whatsapp,
+      email_regalias: f.emailRegalias,
+      compositor: f.compositor,
+      productor: f.productor,
+      explicito: f.explicito,
+      canta_solo: f.cantaSolo,
+      featuring: f.featuring,
+      es_cover: f.esCover,
+      idioma: f.idioma,
+      instagram: f.instagram,
+      fee: isAdmin ? "0.00" : "5.00",
+      status: isAdmin ? "pagado_revisar" : "esperando_paypal",
+    };
+    const { error } = await supabase.from("releases").insert(row);
+    setSaving(false);
+    if (error) {
+      alert("Error al guardar: " + error.message + "\n¿Corriste el SQL en Supabase?");
+      return;
+    }
+    const msg = `NUEVO UNICO DISTRO\n${f.titulo} - ${f.artista}\nEmail: ${userEmail}\nWA: ${f.whatsapp}\nGenero: ${f.genero}\nAudio: ${audioFile?.name}\nPortada: ${coverFile?.name} (${coverSize})\nStatus: ${row.status}`;
+    window.open(`https://wa.me/${WHATSAPP_SOPORTE}?text=${encodeURIComponent(msg)}`, "_blank");
+    if (!isAdmin) {
+      window.open(PAYPAL_URL, "_blank");
+      alert("Pedido guardado. Completa el pago de $5 en PayPal.");
+    } else {
+      alert("Guardado GRATIS (admin). Ya está en el panel /admin.");
+    }
+    cargarMis(userEmail);
+    setView("mis");
+  };
+
+  if (view === "auth") {
     return (
-      <main className="min-h-screen bg-black text-white flex items-center justify-center px-4">
-        <div className="w-full max-w-sm bg-zinc-900 border border-white/10 rounded-[24px] p-6 text-center">
-          <div className="h-14 w-14 mx-auto rounded-full bg-[#d4af37] text-black flex items-center justify-center font-black text-xl">
-            U
+      <div className="min-h-screen bg-black text-white flex items-center justify-center px-5">
+        <div className="w-full max-w-[420px]">
+          <button onClick={() => setView("home")} className="text-zinc-400 text-sm">← Volver</button>
+          <div className="text-center mt-6">
+            <div className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-b from-[#d4af37] to-[#8a6d2b]">U</div>
+            <h1 className="mt-2 text-xl tracking-[0.3em]">UNICO DISTRO</h1>
+            <p className="text-zinc-400 text-sm mt-2">{authTab === "login" ? "Inicia sesión" : "Crea tu cuenta gratis"}</p>
           </div>
-          <p className="text-[11px] tracking-[0.3em] text-[#d4af37] font-bold mt-4">
-            UNICO DISTRO
-          </p>
-          <h1 className="text-[22px] font-black mt-1">Admin</h1>
-          <input
-            type="password"
-            value={clave}
-            onChange={(e) => setClave(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && login()}
-            placeholder="Clave"
-            className="w-full mt-6 bg-black border border-white/20 rounded-full px-4 py-3.5 text-center outline-none focus:border-[#d4af37]"
-          />
-          {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
-          <button
-            onClick={login}
-            className="w-full mt-3 bg-[#d4af37] text-black rounded-full py-3.5 font-black"
-          >
-            ENTRAR
+          <button onClick={loginGoogle} className="w-full bg-white text-black font-bold py-4 rounded-full mt-6 flex items-center justify-center gap-2">
+            <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="" />
+            Continuar con Google
           </button>
-          <a href="/" className="block text-sm text-gray-500 mt-4">
-            ← Inicio
-          </a>
+          <div className="flex gap-2 mt-5 bg-zinc-900 p-1 rounded-full">
+            <button onClick={() => setAuthTab("login")} className={`flex-1 py-2.5 rounded-full text-sm font-bold ${authTab === "login" ? "bg-[#d4af37] text-black" : "text-zinc-400"}`}>Iniciar Sesión</button>
+            <button onClick={() => setAuthTab("crear")} className={`flex-1 py-2.5 rounded-full text-sm font-bold ${authTab === "crear" ? "bg-[#d4af37] text-black" : "text-zinc-400"}`}>Crear Cuenta</button>
+          </div>
+          {authTab === "crear" && (
+            <>
+              <label className={labelCls}>Nombre artístico *</label>
+              <input value={nombreCuenta} onChange={(e) => setNombreCuenta(e.target.value)} placeholder="Tu nombre artístico" className={inputCls} />
+            </>
+          )}
+          <label className={labelCls}>Email *</label>
+          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@email.com" className={inputCls} />
+          <label className={labelCls}>Contraseña *</label>
+          <input type="password" value={pass} onChange={(e) => setPass(e.target.value)} placeholder="••••••••" className={inputCls} />
+          <button onClick={entrar} className="w-full bg-[#d4af37] text-black font-bold py-4 rounded-full mt-6">{authTab === "login" ? "Entrar y Subir Música" : "Crear Cuenta y Subir"}</button>
         </div>
-      </main>
+      </div>
     );
   }
 
-  return (
-    <main className="min-h-screen bg-black text-white px-4 py-6">
-      <div className="max-w-2xl mx-auto">
-        <div className="flex justify-between items-start">
-          <div>
-            <p className="text-[11px] tracking-[0.3em] text-[#d4af37] font-bold">
-              UNICO DISTRO · ADMIN
-            </p>
-            <h1 className="text-2xl font-black mt-1">Pedidos reales</h1>
+  if (view === "mis") {
+    return (
+      <div className="min-h-screen bg-black text-white px-5 py-8 max-w-[600px] mx-auto">
+        <button onClick={() => setView("home")} className="text-zinc-400 text-sm">← Volver</button>
+        <h1 className="text-[28px] font-black mt-4">Mis Lanzamientos</h1>
+        <p className="text-zinc-400 text-sm">{userEmail} {isAdmin && <span className="text-green-400 font-bold">ADMIN</span>}</p>
+        <button onClick={() => { setPaso(1); setView("form"); }} className="w-full bg-[#d4af37] text-black font-bold py-4 rounded-full mt-6">Subir Nuevo Tema</button>
+        <button onClick={() => cargarMis(userEmail)} className="w-full border border-zinc-700 py-3 rounded-full mt-2 text-sm">Recargar</button>
+        {misReleases.length === 0 && <p className="text-center text-zinc-500 mt-10">Todavia no has subido nada. Sube tu primer tema.</p>}
+        {misReleases.map((r) => (
+          <div key={r.id} className="mt-4 bg-zinc-900 border border-zinc-800 rounded-[16px] p-4">
+            <p className="font-bold">{r.title}</p>
+            <p className="text-zinc-400 text-sm">{r.artist} - {r.genre}</p>
+            <p className="text-zinc-500 text-xs mt-1">Audio: {r.file_name} Portada: {r.cover_size}</p>
+            <p className="mt-2 text-[12px] font-bold text-yellow-400">{r.status}</p>
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={load}
-              className="text-xs px-3 py-1.5 rounded-full border border-white/20"
-            >
-              Actualizar
-            </button>
-            <button
-              onClick={() => {
-                localStorage.removeItem("unico_admin");
-                setAuth(false);
-              }}
-              className="text-xs px-3 py-1.5 rounded-full border border-red-500/40 text-red-400"
-            >
-              Salir
-            </button>
-          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (view === "form") {
+    return (
+      <div className="min-h-screen bg-black text-white px-5 py-8 max-w-[600px] mx-auto">
+        <div className="flex justify-between items-center">
+          <button onClick={() => setView("home")} className="text-zinc-400 text-sm">← Volver</button>
+          <p className="text-xs text-zinc-400">{userEmail} {isAdmin && <span className="text-green-400 font-bold">ADMIN</span>} <span onClick={async () => { await supabase.auth.signOut(); setUserEmail(""); setView("home"); }} className="text-red-400 cursor-pointer ml-2">Salir</span></p>
         </div>
+        <p className="text-[#d4af37] tracking-[0.3em] text-[12px] mt-4">PASO {paso} DE 4</p>
+        <h1 className="text-[32px] font-black mt-1">Subir Lanzamiento {isAdmin && <span className="text-green-400 text-[16px]">GRATIS</span>}</h1>
+        <button onClick={() => { cargarMis(userEmail); setView("mis"); }} className="text-sm text-[#d4af37] mt-2">→ Ver Mis Lanzamientos</button>
 
-        <div className="grid grid-cols-4 gap-2 mt-6 text-center text-xs">
-          <div className="bg-zinc-900 rounded-2xl py-3 border border-white/10">
-            <p className="font-black text-lg">{items.length}</p>
-            <p className="text-gray-400">Total</p>
-          </div>
-          <div className="bg-zinc-900 rounded-2xl py-3 border border-white/10">
-            <p className="font-black text-lg text-yellow-300">
-              {count("esperando_paypal")}
-            </p>
-            <p className="text-gray-400">PayPal</p>
-          </div>
-          <div className="bg-zinc-900 rounded-2xl py-3 border border-white/10">
-            <p className="font-black text-lg text-blue-300">
-              {count("pagado_revisar") + count("subiendo_routenote")}
-            </p>
-            <p className="text-gray-400">En proceso</p>
-          </div>
-          <div className="bg-zinc-900 rounded-2xl py-3 border border-white/10">
-            <p className="font-black text-lg text-green-400">
-              {count("enviado_routenote")}
-            </p>
-            <p className="text-gray-400">Enviado</p>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-2 mt-4">
-          {[
-            ["todos", "Todos"],
-            ["esperando_paypal", "Esperando PayPal"],
-            ["pagado_revisar", "Pagado"],
-            ["subiendo_routenote", "Subiendo RN"],
-            ["enviado_routenote", "Enviado RN"],
-          ].map(([k, label]) => (
-            <button
-              key={k}
-              onClick={() => setFilter(k)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold ${
-                filter === k
-                  ? "bg-white text-black"
-                  : "bg-zinc-900 border border-white/10"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {error && (
-          <p className="mt-4 text-sm text-red-400">
-            Error Supabase: {error}. ¿Corriste el SQL del PASO 1?
-          </p>
-        )}
-        {loading && <p className="mt-6 text-gray-500">Cargando…</p>}
-        {!loading && filtered.length === 0 && (
-          <p className="mt-8 text-center text-gray-500">
-            No hay pedidos todavía.
-          </p>
-        )}
-
-        <div className="mt-4 space-y-4">
-          {filtered.map((r) => (
-            <div
-              key={r.id}
-              className="rounded-2xl border border-white/10 bg-zinc-900 p-4"
-            >
-              <div className="flex justify-between gap-2">
-                <div>
-                  <p className="font-bold text-lg">{r.title || "Sin título"}</p>
-                  <p className="text-sm text-gray-400">
-                    {r.artist} · {r.genre || "—"}
-                  </p>
-                </div>
-                <span className="text-[10px] h-fit px-2 py-1 rounded-full bg-white/10 font-bold">
-                  {r.status}
-                </span>
-              </div>
-
-              <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-300">
-                <p>
-                  <span className="text-gray-500">Email:</span> {r.user_email}
-                </p>
-                <p>
-                  <span className="text-gray-500">WhatsApp:</span>{" "}
-                  {r.whatsapp || "—"}
-                </p>
-                <p>
-                  <span className="text-gray-500">Personal:</span>{" "}
-                  {r.nombre_personal || "—"}
-                </p>
-                <p>
-                  <span className="text-gray-500">Fee:</span> ${r.fee || "5"}
-                </p>
-                <p>
-                  <span className="text-gray-500">Audio:</span>{" "}
-                  {r.file_name || "—"}
-                </p>
-                <p>
-                  <span className="text-gray-500">Portada:</span>{" "}
-                  {r.cover_name || "—"} ({r.cover_size || "?"})
-                </p>
-                <p>
-                  <span className="text-gray-500">Compositor:</span>{" "}
-                  {r.compositor || "—"}
-                </p>
-                <p>
-                  <span className="text-gray-500">Productor:</span>{" "}
-                  {r.productor || "—"}
-                </p>
-                <p className="col-span-2 text-gray-500">
-                  {r.created_at
-                    ? new Date(r.created_at).toLocaleString("es-DO")
-                    : ""}
-                </p>
-              </div>
-
-              <div className="flex flex-wrap gap-2 mt-4">
-                <button
-                  onClick={() => setStatus(r.id, "pagado_revisar")}
-                  className="text-xs px-3 py-2 rounded-full bg-yellow-500/20 text-yellow-300 font-bold"
-                >
-                  Marcar pagado
-                </button>
-                <button
-                  onClick={() => setStatus(r.id, "subiendo_routenote")}
-                  className="text-xs px-3 py-2 rounded-full bg-blue-500/20 text-blue-300 font-bold"
-                >
-                  Subiendo RouteNote
-                </button>
-                <button
-                  onClick={() => setStatus(r.id, "enviado_routenote")}
-                  className="text-xs px-3 py-2 rounded-full bg-green-500/20 text-green-300 font-bold"
-                >
-                  Enviado RouteNote
-                </button>
-                {r.whatsapp && (
-                  <a
-                    href={`https://wa.me/1${String(r.whatsapp).replace(/\D/g, "")}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-xs px-3 py-2 rounded-full border border-[#25D366]/50 text-[#25D366]"
-                  >
-                    WhatsApp artista
-                  </a>
+        {paso === 1 && (
+          <>
+            <div onClick={() => audioRef.current?.click()} className="mt-6 border border-dashed border-zinc-500 rounded-[20px] py-8 text-center cursor-pointer">
+              <p className="font-bold">Audio *</p>
+              <p className="text-[#d4af37] mt-1">{audioFile ? audioFile.name : "Toca para subir WAV / FLAC"}</p>
+              <input ref={audioRef} type="file" accept=".wav,.flac,.mp3" className="hidden" onChange={(e) => setAudioFile(e.target.files?.[0] || null)} />
+            </div>
+            <div className="mt-4">
+              <p className="font-bold">Portada * - 3000x3000</p>
+              <div onClick={() => coverRef.current?.click()} className="mt-2 border border-zinc-700 rounded-[20px] overflow-hidden cursor-pointer bg-zinc-900">
+                {coverPreview ? (
+                  <>
+                    <img src={coverPreview} className="w-full aspect-square object-cover" alt="cover" />
+                    <div className="p-4 flex justify-between items-center">
+                      <div>
+                        <p className="text-sm font-bold">{coverFile?.name}</p>
+                        <p className={`text-sm ${coverSize === "3000x3000" ? "text-green-400" : "text-yellow-400"}`}>Tamaño: {coverSize} {coverSize === "3000x3000" ? "✓ Perfecto" : "⚠ Pide 3000x3000"}</p>
+                      </div>
+                      <span className="text-[#d4af37] text-sm">Cambiar</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="aspect-square flex flex-col items-center justify-center p-8">
+                    <div className="w-[220px] h-[220px] border-2 border-dashed border-zinc-600 rounded-[16px] flex items-center justify-center text-center">
+                      <p className="text-zinc-500 text-sm">3000 x 3000<br />Toca para subir</p>
+                    </div>
+                  </div>
                 )}
               </div>
+              <input ref={coverRef} type="file" accept="image/*" className="hidden" onChange={(e) => onCover(e.target.files?.[0] || null)} />
             </div>
-          ))}
-        </div>
-      </div>
-    </main>
-  );
-}
+            <label className
