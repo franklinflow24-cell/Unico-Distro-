@@ -276,15 +276,9 @@ export default function Home() {
         {paso === 1 && (
           <>
             <div
-              {isAdmin ? (
-                <button onClick={guardarYPagar} disabled={saving} className="flex-1 bg-green-500 text-black font-bold py-4 rounded-full">
-                  {saving ? "Guardando…" : "Subir Gratis - Admin"}
-                </button>
-              ) : (
-                <button onClick={guardarYPagar} disabled={saving} className="flex-1 bg-[#d4af37] text-black font-bold py-4 rounded-full">
-                  {saving ? "Guardando…" : "Guardar y pagar $5 PayPal"}
-                </button>
-              )}
+              onClick={() => audioRef.current?.click()}
+              className="mt-6 border border-dashed border-zinc-500 rounded-[20px] py-8 text-center cursor-pointer"
+            >
               <p className="font-bold">Audio *</p>
               <p className="text-[#d4af37] mt-1">
                 {audioFile ? audioFile.name : "Toca para subir WAV / FLAC"}
