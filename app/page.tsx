@@ -87,7 +87,59 @@ export default function Home() {
     window.open(`https://wa.me/18295435381?text=${encodeURIComponent(msg)}`, "_blank");
     alert("Subido GRATIS como Admin! Te llegó al WhatsApp.");
   };
+const [saving, setSaving] = useState(false);
 
+  const guardarYPagar = async () => {
+    if (!f.whatsapp) return alert("Pon tu WhatsApp");
+    if (!f.titulo || !f.artista) return alert("Falta título o artista");
+    setSaving(true);
+
+    const row = {
+      title: f.titulo,
+      artist: f.artista,
+      nombre_personal: f.nombrePersonal,
+      cedula: f.cedula,
+      genre: f.genero,
+      release_date: f.fecha,
+      file_name: audioFile?.name || "",
+      cover_name: coverFile?.name || "",
+      cover_size: coverSize,
+      user_email: userEmail,
+      whatsapp: f.whatsapp,
+      email_regalias: f.emailRegalias,
+      compositor: f.compositor,
+      productor: f.productor,
+      explicito: f.explicito,
+      canta_solo: f.cantaSolo,
+      featuring: f.featuring,
+      es_cover: f.esCover,
+      idioma: f.idioma,
+      instagram: f.instagram,
+      fee: isAdmin ? "0.00" : "5.00",
+      status: isAdmin ? "pagado_revisar" : "esperando_paypal",
+    };
+
+    const { error } = await supabase.from("releases").insert(row);
+    setSaving(false);
+
+    if (error) {
+      alert("Error al guardar: " + error.message + "\n¿Corriste el SQL en Supabase?");
+      return;
+    }
+
+    const msg = `NUEVO UNICO DISTRO\n${f.titulo} - ${f.artista}\nEmail: ${userEmail}\nWA: ${f.whatsapp}\nGénero: ${f.genero}\nAudio: ${audioFile?.name}\nPortada: \( {coverFile?.name} ( \){coverSize})\nStatus: ${row.status}`;
+    window.open(
+      `https://wa.me/18295435381?text=${encodeURIComponent(msg)}`,
+      "_blank"
+    );
+
+    if (!isAdmin) {
+      window.open("https://paypal.me/fernando2814/5USD", "_blank");
+      alert("Pedido guardado. Completa el pago de $5 en PayPal.");
+    } else {
+      alert("Guardado GRATIS (admin). Ya está en el panel admin.");
+    }
+  };
   if (view === "auth") {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center px-5">
