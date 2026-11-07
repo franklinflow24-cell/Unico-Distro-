@@ -113,7 +113,6 @@ export default function Home() {
     }
   };
 
-  // ARREGLADO LO DE 3000x3000
   const onCover = (file: File | null) => {
     if (!file) return;
     setCoverFile(file);
@@ -132,31 +131,6 @@ export default function Home() {
     if (!f.titulo || !f.artista) return alert("Falta título o artista");
     setSaving(true);
 
-    let audioUrl = "";
-    let coverUrl = "";
-
-    // Subir archivos a Supabase Storage si tienes los buckets
-    try {
-      if (audioFile) {
-        const audioName = `${Date.now()}_${audioFile.name}`;
-        const { data } = await supabase.storage.from("audios").upload(audioName, audioFile);
-        if (data) {
-          const { data: pub } = supabase.storage.from("audios").getPublicUrl(audioName);
-          audioUrl = pub.publicUrl;
-        }
-      }
-      if (coverFile) {
-        const coverName = `${Date.now()}_${coverFile.name}`;
-        const { data } = await supabase.storage.from("covers").upload(coverName, coverFile);
-        if (data) {
-          const { data: pub } = supabase.storage.from("covers").getPublicUrl(coverName);
-          coverUrl = pub.publicUrl;
-        }
-      }
-    } catch (e) {
-      console.log("storage no configurado, sigue solo con nombres");
-    }
-
     const row = {
       title: f.titulo,
       artist: f.artista,
@@ -167,8 +141,6 @@ export default function Home() {
       file_name: audioFile?.name || "",
       cover_name: coverFile?.name || "",
       cover_size: coverSize,
-      audio_url: audioUrl,
-      cover_url: coverUrl,
       user_email: userEmail,
       whatsapp: f.whatsapp,
       email_regalias: f.emailRegalias,
@@ -188,21 +160,21 @@ export default function Home() {
     setSaving(false);
 
     if (error) {
-      alert("Error al guardar: " + error.message + "\n¿Corriste el SQL en Supabase?");
+      alert("Error al guardar: " + error.message);
       return;
     }
 
     await cargarMisSubidas(userEmail);
     setView("mis");
 
-    const msg = `NUEVO UNICO DISTRO\n${f.titulo} - ${f.artista}\nEmail: ${userEmail}\nWA: ${f.whatsapp}\nGénero: ${f.genero}\nAudio: ${audioFile?.name}\nPortada: ${coverFile?.name} (${coverSize})\nStatus: ${row.status}`;
+    const msg = `NUEVO UNICO DISTRO\n${f.titulo} - ${f.artista}\nEmail: ${userEmail}\nWA: ${f.whatsapp}\nGenero: ${f.genero}\nAudio: ${audioFile?.name}\nPortada: ${coverFile?.name} (${coverSize})\nStatus: ${row.status}`;
     window.open(`https://wa.me/${WHATSAPP_SOPORTE}?text=${encodeURIComponent(msg)}`, "_blank");
 
     if (!isAdmin) {
       window.open(PAYPAL_URL, "_blank");
       alert("Pedido guardado. Completa el pago de $5 en PayPal. Ya lo ves en Mis Subidas como PENDIENTE.");
     } else {
-      alert("Guardado GRATIS (admin). Ya está en el panel /admin y en Mis Subidas.");
+      alert("Guardado GRATIS (admin). Ya esta en el panel /admin y en Mis Subidas.");
     }
   };
 
@@ -246,24 +218,18 @@ export default function Home() {
         <h1 className="text-[28px] font-black mt-4">Mis Lanzamientos</h1>
         <p className="text-zinc-400 text-sm">{userEmail}</p>
         <button onClick={() => setView("form")} className="w-full bg-[#d4af37] text-black font-bold py-4 rounded-full mt-6">+ Subir Nuevo Tema</button>
-        {misReleases.length === 0 && <p className="text-center text-zinc-500 mt-10">Todavía no has subido nada. Lo que subas aparece aquí.</p>}
+        {misReleases.length === 0 && <p className="text-center text-zinc-500 mt-10">Todavía no has subido nada.</p>}
         {misReleases.map((r) => (
           <div key={r.id} className="mt-4 bg-zinc-900 border border-zinc-800 rounded-[16px] p-4">
-            <div className="flex gap-3">
-              {r.cover_url ? <img src={r.cover_url} className="w-[60px] h-[60px] rounded-lg object-cover" alt="" /> : coverPreview ? null : null}
-              <div className="flex-1">
-                <div className="flex justify-between items-start gap-2">
-                  <div>
-                    <p className="font-bold">{r.title}</p>
-                    <p className="text-zinc-400 text-sm">{r.artist} • {r.genre}</p>
-                    <p className="text-zinc-500 text-xs mt-1">Audio: {r.file_name} • Portada: {r.cover_size}</p>
-                    {r.audio_url && <audio controls src={r.audio_url} className="w-full mt-2 h-[32px]" />}
-                  </div>
-                  <span className={`shrink-0 text-[11px] font-bold px-3 py-1 rounded-full ${r.status === 'subido' || r.status === 'aprobado' ? 'bg-green-500 text-black' : r.status === 'pagado_revisar' ? 'bg-yellow-400 text-black' : 'bg-zinc-700 text-white'}`}>
-                    {r.status === 'esperando_paypal' ? 'PENDIENTE' : r.status === 'pagado_revisar' ? 'PENDIENTE' : r.status === 'subido' ? 'SUBIDO ✓' : r.status.toUpperCase()}
-                  </span>
-                </div>
+            <div className="flex justify-between items-start gap-2">
+              <div>
+                <p className="font-bold">{r.title}</p>
+                <p className="text-zinc-400 text-sm">{r.artist} - {r.genre}</p>
+                <p className="text-zinc-500 text-xs mt-1">Audio: {r.file_name} - Portada: {r.cover_size}</p>
               </div>
+              <span className="shrink-0 text-[11px] font-bold px-3 py-1 rounded-full bg-yellow-400 text-black">
+                {r.status === "esperando_paypal" ? "PENDIENTE" : r.status === "pagado_revisar" ? "PENDIENTE" : r.status === "subido" ? "SUBIDO" : r.status}
+              </span>
             </div>
           </div>
         ))}
@@ -290,7 +256,6 @@ export default function Home() {
             <div onClick={() => audioRef.current?.click()} className="mt-6 border border-dashed border-zinc-500 rounded-[20px] py-8 text-center cursor-pointer">
               <p className="font-bold">Audio *</p>
               <p className="text-[#d4af37] mt-1">{audioFile ? audioFile.name : "Toca para subir WAV / FLAC"}</p>
-              {audioFile && <audio controls src={URL.createObjectURL(audioFile)} className="w-full mt-3 px-4" />}
               <input ref={audioRef} type="file" accept=".wav,.flac,.mp3" className="hidden" onChange={(e) => setAudioFile(e.target.files?.[0] || null)} />
             </div>
             <div className="mt-4">
@@ -391,4 +356,79 @@ export default function Home() {
             <input type="date" value={f.fecha} onChange={(e) => set("fecha", e.target.value)} className={inputCls} />
             <div className="flex gap-3 mt-6">
               <button onClick={() => setPaso(2)} className="flex-1 border border-zinc-600 py-4 rounded-full">Atrás</button>
-              <button onClick={() => s
+              <button onClick={() => setPaso(4)} className="flex-1 bg-[#d4af37] text-black font-bold py-4 rounded-full">Continuar</button>
+            </div>
+          </>
+        )}
+
+        {paso === 4 && (
+          <>
+            <h2 className="font-bold text-lg mt-6">Pago y regalías</h2>
+            <label className={labelCls}>WhatsApp *</label>
+            <input value={f.whatsapp} onChange={(e) => set("whatsapp", e.target.value)} placeholder="8091234567" className={inputCls} />
+            <label className={labelCls}>Email regalías *</label>
+            <input value={f.emailRegalias} onChange={(e) => set("emailRegalias", e.target.value)} placeholder="tu@email.com" className={inputCls} />
+            <div className="mt-5 bg-zinc-900 rounded-[16px] p-4 text-sm space-y-2">
+              <div className="flex justify-between"><span className="text-zinc-400">Tema</span><span>{f.titulo}</span></div>
+              <div className="flex justify-between"><span className="text-zinc-400">Artista / Personal</span><span>{f.artista} / {f.nombrePersonal}</span></div>
+              <div className="flex justify-between"><span className="text-zinc-400">Canta solo?</span><span>{f.cantaSolo}</span></div>
+              <div className="flex justify-between"><span className="text-zinc-400">Explícita?</span><span>{f.explicito}</span></div>
+              <div className="flex justify-between"><span className="text-zinc-400">Portada</span><span>{coverSize || "—"}</span></div>
+              <div className="flex justify-between"><span className="text-zinc-400">Total</span><span className="text-[#d4af37] font-bold">{isAdmin ? "GRATIS - ADMIN" : "$5 USD"}</span></div>
+            </div>
+            <div className="flex gap-3 mt-4">
+              <button onClick={() => setPaso(3)} className="flex-1 border border-zinc-600 py-4 rounded-full">Atrás</button>
+              {isAdmin ? (
+                <button onClick={guardarYPagar} disabled={saving} className="flex-1 bg-green-500 text-black font-bold py-4 rounded-full disabled:opacity-60">{saving ? "Guardando…" : "Subir Gratis - Admin"}</button>
+              ) : (
+                <button onClick={guardarYPagar} disabled={saving} className="flex-1 bg-[#d4af37] text-black font-bold py-4 rounded-full disabled:opacity-60">{saving ? "Guardando…" : "Guardar y pagar $5 PayPal"}</button>
+              )}
+            </div>
+            {isAdmin && <p className="text-green-400 text-xs text-center mt-2">Eres Admin {ADMIN_EMAIL}, subes gratis</p>}
+          </>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-black text-white">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-24 top-0 h-[420px] w-[420px] rounded-full bg-[#d4af37]/15 blur-[100px] animate-pulse" />
+        <div className="absolute -right-20 bottom-10 h-[380px] w-[380px] rounded-full bg-purple-700/20 blur-[110px] animate-pulse" />
+        <div className="absolute left-1/3 top-1/3 h-[260px] w-[260px] rounded-full bg-cyan-500/10 blur-[90px] animate-pulse" />
+      </div>
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-5xl flex-col items-center px-6 pb-16 pt-14 text-center">
+        <div className="mb-8 flex flex-col items-center">
+          <div className="text-7xl leading-none font-black text-transparent bg-clip-text bg-gradient-to-b from-[#d4af37] to-[#8a6d2b]">U</div>
+          <h1 className="mt-2 text-2xl tracking-[0.35em] font-light">UNICO DISTRO</h1>
+          <p className="mt-1 text-[10px] tracking-[0.45em] text-[#d4af37]">MUSIC DISTRIBUTION</p>
+          {userEmail && <p className="mt-2 text-xs text-green-400">Logueado: {userEmail} {isAdmin && "ADMIN"}</p>}
+        </div>
+        <h2 className="max-w-3xl text-4xl font-bold leading-tight md:text-5xl">Distribuye tu música al <span className="text-[#d4af37]">mundo</span></h2>
+        <p className="mt-5 max-w-2xl text-base text-gray-400 md:text-lg">La distribuidora de RD para nuevos talentos. Sube tu tema, paga <span className="font-semibold text-[#f5d37f]">$5 USD</span> por lanzamiento y nosotros lo llevamos a las plataformas. Tú conservas tus derechos.</p>
+        <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row">
+          <button onClick={() => { if (userEmail) setView("form"); else { setAuthTab("crear"); setView("auth"); } }} className="rounded-full bg-white px-8 py-3.5 text-sm font-bold text-black">Subir Música</button>
+          <button onClick={() => { if (userEmail) { cargarMisSubidas(userEmail); setView("mis"); } else { setAuthTab("login"); setView("auth"); } }} className="rounded-full border border-white/40 px-8 py-3.5 text-sm font-medium">Mis Lanzamientos</button>
+          <button onClick={() => { setAuthTab("login"); setView("auth"); }} className="rounded-full border border-white/40 px-8 py-3.5 text-sm font-medium">Iniciar Sesión</button>
+        </div>
+        <a href={`https://wa.me/${WHATSAPP_SOPORTE}?text=Hola%20UNICO%20DISTRO%2C%20necesito%20soporte`} target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex items-center gap-2 rounded-full border border-[#25D366]/50 bg-[#25D366]/10 px-5 py-2.5 text-sm font-medium text-[#25D366]">Contactar con soporte (WhatsApp)</a>
+        <p className="mt-2 text-xs text-gray-600">829-543-5381</p>
+        <div className="mt-14 w-full">
+          <p className="mb-5 text-xs uppercase tracking-[0.3em] text-gray-500">Disponible en las principales plataformas</p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+            {["Spotify","Apple Music","Deezer","TikTok","YouTube Music","Amazon Music","Instagram","+150 más"].map((name) => (
+              <div key={name} className="rounded-2xl border border-white/10 bg-white/5 px-3 py-4"><p className="font-semibold text-white">{name}</p></div>
+            ))}
+          </div>
+        </div>
+        <div className="mt-16 grid w-full gap-4 text-left md:grid-cols-3">
+          <div className="rounded-2xl border border-white/10 bg-zinc-950 p-5"><p className="text-xs tracking-widest text-[#d4af37]">01</p><h3 className="mt-2 text-lg font-bold">Sube tu tema</h3><p className="mt-2 text-sm text-gray-400">Audio, portada 3000x3000 y datos como DistroKid.</p></div>
+          <div className="rounded-2xl border border-white/10 bg-zinc-950 p-5"><p className="text-xs tracking-widest text-[#d4af37]">02</p><h3 className="mt-2 text-lg font-bold">Paga $5 USD</h3><p className="mt-2 text-sm text-gray-400">Un pago por lanzamiento. Tú conservas tus derechos.</p></div>
+          <div className="rounded-2xl border border-white/10 bg-zinc-950 p-5"><p className="text-xs tracking-widest text-[#d4af37]">03</p><h3 className="mt-2 text-lg font-bold">Va a las plataformas</h3><p className="mt-2 text-sm text-gray-400">Nosotros lo subimos a Spotify, Apple y más.</p></div>
+        </div>
+        <p className="mt-16 text-xs text-gray-600">© 2026 UNICO DISTRO</p>
+      </div>
+    </div>
+  );
+}
