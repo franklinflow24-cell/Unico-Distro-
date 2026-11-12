@@ -214,9 +214,7 @@ export default function Admin() {
                 ✏️ Editar
               </button>
               <a
-                href={`https://wa.me/\( {r.whatsapp}?text= \){encodeURIComponent(
-  `Hola ${r.artist}, soy UNICO DISTRO. Tu tema ${r.title} tiene un error: `
-)}`}
+                href={"https://wa.me/" + r.whatsapp + "?text=" + encodeURIComponent("Hola " +r.artist + ", soy UNICO DISTRO. Tu tema " + r.title + " tiene un error: ")}`}
                 target="_blank"
                 className="bg-[#25D366] text-black text-xs font-bold px-3 py-2 rounded-full"
               >
